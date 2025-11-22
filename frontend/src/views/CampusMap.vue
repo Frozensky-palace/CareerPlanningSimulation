@@ -1,44 +1,7 @@
 <template>
   <div class="campus-map-container">
-    <!-- 黑色顶块 - 显示状态 -->
-    <header class="bg-contrast text-white shadow-medium">
-      <div class="px-4 py-2">
-        <div class="flex justify-between items-center">
-          <!-- 左侧：五维数值 -->
-          <div class="flex items-center gap-4 text-xs">
-            <div v-for="item in attributeDisplay" :key="item.key" class="flex items-center gap-1">
-              <span class="opacity-60">{{ item.label }}</span>
-              <span class="font-bold" :style="{ color: item.color }">{{ item.value }}</span>
-            </div>
-          </div>
-
-          <!-- 右侧：菜单和信息 -->
-          <div class="flex items-center gap-4 text-xs">
-            <div class="flex items-center gap-2">
-              <el-tag type="info" size="small">第 {{ gameStore.currentSemester }} 学期</el-tag>
-              <el-tag type="success" size="small">第 {{ gameStore.currentWeek }} 周</el-tag>
-              <el-tag :type="gameStore.remainingEvents > 3 ? 'warning' : 'danger'" size="small">
-                剩余 {{ gameStore.remainingEvents }} 事件
-              </el-tag>
-            </div>
-            <el-dropdown @command="handleMenuCommand">
-              <el-icon :size="20" class="cursor-pointer hover:text-secondary-500 transition-colors">
-                <Setting />
-              </el-icon>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="badges">我的勋章</el-dropdown-item>
-                  <el-dropdown-item command="listView">列表视图</el-dropdown-item>
-                  <el-dropdown-item command="saves">切换存档</el-dropdown-item>
-                  <el-dropdown-item command="workshop">创作工坊</el-dropdown-item>
-                  <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </div>
-        </div>
-      </div>
-    </header>
+    <!-- 顶部导航栏 -->
+    <TopNavBar show-game-info show-attributes @open-profile="showProfilePanel = true" />
 
     <!-- 地图主体 -->
     <main class="map-content">
@@ -116,8 +79,8 @@
       </div>
     </main>
 
-    <!-- 勋章面板 -->
-    <BadgePanel v-model="showBadgePanel" />
+    <!-- 个人信息面板 -->
+    <UserProfile v-model="showProfilePanel" />
   </div>
 </template>
 
@@ -125,35 +88,22 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Setting, Loading, DocumentChecked } from '@element-plus/icons-vue'
+import { Loading, DocumentChecked } from '@element-plus/icons-vue'
 import { useGameStore } from '@/stores/gameStore'
-import { useUserStore } from '@/stores/userStore'
 import request from '@/services/api'
 import type { Script } from '@/types'
+import TopNavBar from '@/components/layout/TopNavBar.vue'
+import UserProfile from '@/components/user/UserProfile.vue'
 import EventCard from '@/components/campus/EventCard.vue'
 import MapEventButton from '@/components/campus/MapEventButton.vue'
-import BadgePanel from '@/components/badge/BadgePanel.vue'
 
 const router = useRouter()
 const gameStore = useGameStore()
-const userStore = useUserStore()
 
 const loading = ref(true)
 const availableScripts = ref<Script[]>([])
-const showBadgePanel = ref(false)
+const showProfilePanel = ref(false)
 const viewMode = ref<'map' | 'list'>('map')  // 地图视图或列表视图
-
-const attributeDisplay = computed(() => {
-  const attrs = gameStore.currentAttributes
-  if (!attrs) return []
-  return [
-    { key: 'de', label: '德', value: attrs.de, color: '#F56C6C' },
-    { key: 'zhi', label: '智', value: attrs.zhi, color: '#409EFF' },
-    { key: 'ti', label: '体', value: attrs.ti, color: '#67C23A' },
-    { key: 'mei', label: '美', value: attrs.mei, color: '#E6A23C' },
-    { key: 'lao', label: '劳', value: attrs.lao, color: '#909399' }
-  ]
-})
 
 // 为每个事件分配地图位置
 const scriptPositions = computed(() => {
@@ -217,28 +167,6 @@ const handleScriptClick = (script: Script) => {
 
 const handleSettlement = () => {
   router.push('/settlement')
-}
-
-const handleMenuCommand = (command: string) => {
-  switch (command) {
-    case 'badges':
-      showBadgePanel.value = true
-      break
-    case 'listView':
-      viewMode.value = viewMode.value === 'map' ? 'list' : 'map'
-      break
-    case 'saves':
-      router.push('/initial-setup')
-      break
-    case 'workshop':
-      router.push('/workshop')
-      break
-    case 'logout':
-      userStore.logout()
-      router.push('/login')
-      ElMessage.success('已退出登录')
-      break
-  }
 }
 
 const handleImageError = (e: Event) => {

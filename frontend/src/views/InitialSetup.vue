@@ -54,14 +54,14 @@
             v-if="selectedSaveId"
             type="primary"
             size="large"
-            class="flex-1 !rounded-xl !h-12"
+            class="flex-1 !rounded-xl !h-12 !bg-secondary-500 !border-secondary-500 !text-white hover:!bg-secondary-600 hover:!border-secondary-600 shadow-glow-blue"
             @click="continueGame"
           >
             继续游戏
           </el-button>
           <el-button
             size="large"
-            class="flex-1 !rounded-xl !h-12 !border-secondary-200"
+            class="flex-1 !rounded-xl !h-12 !border-2 !border-secondary-300 !text-secondary-600 hover:!bg-secondary-50"
             @click="step = 2"
           >
             <el-icon class="mr-1"><Plus /></el-icon>

@@ -12,6 +12,7 @@ import saveRoutes from './routes/saves.js'
 import scriptRoutes from './routes/scripts.js'
 import badgeRoutes from './routes/badges.js'
 import settlementRoutes from './routes/settlement.js'
+import adminRoutes from './routes/admin.js'
 
 // 导入种子数据
 import { seedDatabase } from './seeds/scripts.js'
@@ -32,6 +33,7 @@ app.use('/api/saves', saveRoutes)
 app.use('/api/scripts', scriptRoutes)
 app.use('/api/badges', badgeRoutes)
 app.use('/api/settlement', settlementRoutes)
+app.use('/api/admin', adminRoutes)
 
 // 健康检查
 app.get('/api/health', (req, res) => {
@@ -54,12 +56,12 @@ const startServer = async () => {
     await sequelize.authenticate()
     console.log('✓ Database connected successfully')
 
-    // 同步数据库模型（开发环境）
-    if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: true })
-      console.log('✓ Database synced')
+    // 跳过数据库同步（表已存在）
+    // 如需重新同步，请手动删除数据库表后重启服务
+    console.log('✓ Database tables already exist, skipping sync')
 
-      // 插入种子数据
+    // 插入种子数据
+    if (process.env.NODE_ENV === 'development') {
       await seedDatabase()
     }
 
