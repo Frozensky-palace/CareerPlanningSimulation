@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npm install)",
+      "Bash(mysql:*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(dir:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm install:*)",
+      "Bash(npx tailwindcss init:*)",
+      "Bash(pnpm dlx tailwindcss init:*)",
+      "Bash(npm run dev)",
+      "Bash(npm uninstall tailwindcss)",
+      "Bash(cat:*)",
+      "Bash(\"d:\\zhj\\vscode\\CareerPlanningSimulation\\frontend\\postcss.config.js\")",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(curl:*)",
+      "Bash(npm rebuild bcrypt)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm run dev)",
+      "Bash(taskkill:*)",
+      "Bash(powershell:*)",
+      "Bash(copy:*)",
+      "Bash(timeout:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

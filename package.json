@@ -1,0 +1,16 @@
+{
+  "name": "career-planning-simulation",
+  "version": "1.0.0",
+  "description": "易班·大学生涯数字孪生平台",
+  "scripts": {
+    "install:all": "pnpm install --filter backend && pnpm install --filter frontend",
+    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "build:backend": "pnpm --filter backend build",
+    "build:frontend": "pnpm --filter frontend build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
