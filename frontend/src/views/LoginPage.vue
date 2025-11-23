@@ -1,12 +1,12 @@
 <template>
   <div class="min-h-screen bg-primary-light">
-    <!-- 黑色顶块 -->
-    <header class="bg-contrast text-white py-3 px-6 shadow-medium">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white border-b border-gray-100 py-3 px-6">
       <div class="max-w-6xl mx-auto flex items-center gap-2">
-        <el-icon :size="24" class="text-secondary-500" @click="router.push('/')">
+        <el-icon :size="20" class="text-secondary-500 cursor-pointer hover:opacity-70" @click="router.push('/')">
           <ArrowLeft />
         </el-icon>
-        <span class="font-semibold text-lg">返回首页</span>
+        <span class="font-semibold text-lg text-gray-800">返回首页</span>
       </div>
     </header>
 

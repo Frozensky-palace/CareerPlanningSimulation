@@ -1,4 +1,4 @@
-import { Script, Badge } from '../models/index.js'
+import { Script, Badge, Admin, SystemSetting } from '../models/index.js'
 
 // 初始测试剧本数据
 const seedScripts = [
@@ -392,6 +392,30 @@ const seedBadges = [
   }
 ]
 
+// 默认系统设置
+const defaultSettings = [
+  {
+    key: 'game_initial_attributes_total',
+    value: '250',
+    description: '初始属性点数总和'
+  },
+  {
+    key: 'game_events_per_phase',
+    value: '10',
+    description: '每阶段可触发的事件数量'
+  },
+  {
+    key: 'game_max_semester',
+    value: '8',
+    description: '最大学期数'
+  },
+  {
+    key: 'site_name',
+    value: '"大学生涯数字孪生平台"',
+    description: '网站名称'
+  }
+]
+
 export async function seedDatabase() {
   try {
     // 检查剧本是否已有数据
@@ -410,6 +434,29 @@ export async function seedDatabase() {
       console.log(`✓ Seeded ${seedBadges.length} badges successfully`)
     } else {
       console.log('✓ Badges already seeded, skipping...')
+    }
+
+    // 检查管理员是否已有数据，如果没有则创建默认超级管理员
+    const adminCount = await Admin.count()
+    if (adminCount === 0) {
+      await Admin.create({
+        username: 'admin',
+        password: 'admin123',  // 默认密码，生产环境应该修改
+        role: 'super_admin',
+        email: 'admin@example.com'
+      })
+      console.log('✓ Created default admin account (username: admin, password: admin123)')
+    } else {
+      console.log('✓ Admin already exists, skipping...')
+    }
+
+    // 初始化系统设置
+    const settingCount = await SystemSetting.count()
+    if (settingCount === 0) {
+      await SystemSetting.bulkCreate(defaultSettings)
+      console.log(`✓ Seeded ${defaultSettings.length} system settings successfully`)
+    } else {
+      console.log('✓ System settings already exist, skipping...')
     }
   } catch (error) {
     console.error('✗ Failed to seed database:', error)

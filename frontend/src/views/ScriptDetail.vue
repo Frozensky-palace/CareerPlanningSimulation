@@ -1,13 +1,13 @@
 <template>
   <div class="min-h-screen bg-primary-light flex flex-col">
-    <!-- 黑色顶块 -->
-    <header class="bg-contrast text-white py-3 px-6 shadow-medium">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white border-b border-gray-100 py-3 px-6">
       <div class="max-w-4xl mx-auto flex justify-between items-center">
         <div class="flex items-center gap-3">
-          <el-icon :size="20" class="cursor-pointer hover:text-secondary-500" @click="handleBack">
+          <el-icon :size="20" class="text-secondary-500 cursor-pointer hover:opacity-70" @click="handleBack">
             <ArrowLeft />
           </el-icon>
-          <span class="font-semibold text-lg">{{ script?.title || '加载中...' }}</span>
+          <span class="font-semibold text-lg text-gray-800">{{ script?.title || '加载中...' }}</span>
         </div>
         <el-tag v-if="script" :type="getTypeTag()" size="small">
           {{ getTypeLabel() }}

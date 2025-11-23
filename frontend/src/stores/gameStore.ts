@@ -1,9 +1,19 @@
 import { defineStore } from 'pinia'
 import type { Save, AttributeChanges } from '@/types'
 
+// 从 localStorage 恢复存档状态
+const loadSaveFromStorage = (): Save | null => {
+  try {
+    const saved = localStorage.getItem('currentSave')
+    return saved ? JSON.parse(saved) : null
+  } catch {
+    return null
+  }
+}
+
 export const useGameStore = defineStore('game', {
   state: () => ({
-    currentSave: null as Save | null,
+    currentSave: loadSaveFromStorage(),
     saves: [] as Save[]
   }),
 
@@ -16,8 +26,19 @@ export const useGameStore = defineStore('game', {
   },
 
   actions: {
-    setCurrentSave(save: Save) {
+    setCurrentSave(save: Save | null) {
       this.currentSave = save
+      // 持久化到 localStorage
+      if (save) {
+        localStorage.setItem('currentSave', JSON.stringify(save))
+      } else {
+        localStorage.removeItem('currentSave')
+      }
+    },
+
+    clearCurrentSave() {
+      this.currentSave = null
+      localStorage.removeItem('currentSave')
     },
 
     setSaves(saves: Save[]) {

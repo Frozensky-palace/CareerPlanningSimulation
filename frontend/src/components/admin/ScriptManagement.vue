@@ -316,12 +316,12 @@ const emptyScript = () => ({
   type: 'branch' as const,
   location: 'campus',
   triggerCondition: {
-    semester: [],
-    week: [],
-    minAttributes: {},
-    requiredScripts: []
+    semester: [] as number[],
+    week: [] as number[],
+    minAttributes: { de: 0, zhi: 0, ti: 0, mei: 0, lao: 0 },
+    requiredScripts: [] as number[]
   },
-  options: []
+  options: [] as Array<{ id: number; text: string; attributeChanges: { de?: number; zhi?: number; ti?: number; mei?: number; lao?: number } }>
 })
 
 const currentScript = ref<any>(emptyScript())
@@ -393,7 +393,40 @@ const handleCreateScript = () => {
 
 const handleEditScript = (script: Script) => {
   isEditing.value = true
-  currentScript.value = JSON.parse(JSON.stringify(script))
+  const scriptCopy = JSON.parse(JSON.stringify(script))
+  // 确保triggerCondition存在所有必要字段
+  if (!scriptCopy.triggerCondition) {
+    scriptCopy.triggerCondition = {}
+  }
+  scriptCopy.triggerCondition = {
+    semester: scriptCopy.triggerCondition.semester || [],
+    week: scriptCopy.triggerCondition.week || [],
+    minAttributes: {
+      de: scriptCopy.triggerCondition.minAttributes?.de || 0,
+      zhi: scriptCopy.triggerCondition.minAttributes?.zhi || 0,
+      ti: scriptCopy.triggerCondition.minAttributes?.ti || 0,
+      mei: scriptCopy.triggerCondition.minAttributes?.mei || 0,
+      lao: scriptCopy.triggerCondition.minAttributes?.lao || 0
+    },
+    requiredScripts: scriptCopy.triggerCondition.requiredScripts || []
+  }
+  // 确保选项的属性变化字段存在
+  if (scriptCopy.options) {
+    scriptCopy.options = scriptCopy.options.map((opt: any, idx: number) => ({
+      id: opt.id || idx + 1,
+      text: opt.text || '',
+      attributeChanges: {
+        de: opt.attributeChanges?.de || 0,
+        zhi: opt.attributeChanges?.zhi || 0,
+        ti: opt.attributeChanges?.ti || 0,
+        mei: opt.attributeChanges?.mei || 0,
+        lao: opt.attributeChanges?.lao || 0
+      }
+    }))
+  } else {
+    scriptCopy.options = []
+  }
+  currentScript.value = scriptCopy
   showEditorDialog.value = true
 }
 
@@ -402,6 +435,38 @@ const handleDuplicateScript = (script: Script) => {
   const duplicated = JSON.parse(JSON.stringify(script))
   duplicated.id = 0
   duplicated.title = `${script.title} (副本)`
+  // 确保triggerCondition存在所有必要字段
+  if (!duplicated.triggerCondition) {
+    duplicated.triggerCondition = {}
+  }
+  duplicated.triggerCondition = {
+    semester: duplicated.triggerCondition.semester || [],
+    week: duplicated.triggerCondition.week || [],
+    minAttributes: {
+      de: duplicated.triggerCondition.minAttributes?.de || 0,
+      zhi: duplicated.triggerCondition.minAttributes?.zhi || 0,
+      ti: duplicated.triggerCondition.minAttributes?.ti || 0,
+      mei: duplicated.triggerCondition.minAttributes?.mei || 0,
+      lao: duplicated.triggerCondition.minAttributes?.lao || 0
+    },
+    requiredScripts: duplicated.triggerCondition.requiredScripts || []
+  }
+  // 确保选项的属性变化字段存在
+  if (duplicated.options) {
+    duplicated.options = duplicated.options.map((opt: any, idx: number) => ({
+      id: opt.id || idx + 1,
+      text: opt.text || '',
+      attributeChanges: {
+        de: opt.attributeChanges?.de || 0,
+        zhi: opt.attributeChanges?.zhi || 0,
+        ti: opt.attributeChanges?.ti || 0,
+        mei: opt.attributeChanges?.mei || 0,
+        lao: opt.attributeChanges?.lao || 0
+      }
+    }))
+  } else {
+    duplicated.options = []
+  }
   currentScript.value = duplicated
   showEditorDialog.value = true
 }
@@ -429,7 +494,7 @@ const handleAddOption = () => {
   currentScript.value.options.push({
     id: currentScript.value.options.length + 1,
     text: '',
-    attributeChanges: {}
+    attributeChanges: { de: 0, zhi: 0, ti: 0, mei: 0, lao: 0 }
   })
 }
 

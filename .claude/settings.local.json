@@ -26,7 +26,10 @@
       "Bash(taskkill:*)",
       "Bash(powershell:*)",
       "Bash(copy:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(pnpm run build)",
+      "Bash(nul)",
+      "Bash(exit:*)"
     ],
     "deny": [],
     "ask": []

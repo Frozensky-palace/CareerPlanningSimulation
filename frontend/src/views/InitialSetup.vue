@@ -1,13 +1,13 @@
 <template>
   <div class="min-h-screen bg-primary-light">
-    <!-- 黑色顶块 -->
-    <header class="bg-contrast text-white py-3 px-6 shadow-medium">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white border-b border-gray-100 py-3 px-6">
       <div class="max-w-6xl mx-auto flex justify-between items-center">
         <div class="flex items-center gap-2">
-          <el-icon :size="24" class="text-secondary-500"><Setting /></el-icon>
-          <span class="font-semibold text-lg">初始配置</span>
+          <el-icon :size="24" class="text-secondary-500"><School /></el-icon>
+          <span class="font-semibold text-lg text-gray-800">大学生涯模拟</span>
         </div>
-        <div class="text-sm opacity-60">第 {{ step }} / 2 步</div>
+        <div class="text-sm text-gray-500">第 {{ step }} / 2 步</div>
       </div>
     </header>
 
@@ -156,7 +156,7 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Setting, Plus, Edit } from '@element-plus/icons-vue'
+import { School, Plus, Edit } from '@element-plus/icons-vue'
 import request from '@/services/api'
 import { useGameStore } from '@/stores/gameStore'
 import type { UserSave } from '@/types'
@@ -202,8 +202,15 @@ const loadSaves = async () => {
       step.value = 2
     }
     saveName.value = `存档 ${saves.value.length + 1}`
-  } catch (error) {
-    console.error(error)
+  } catch (error: any) {
+    console.error('加载存档失败:', error)
+    // 如果是认证错误，提示用户重新登录
+    if (error?.response?.status === 401 || error?.message?.includes('401')) {
+      ElMessage.error('登录已过期，请重新登录')
+      router.push('/login')
+      return
+    }
+    ElMessage.warning('加载存档失败，请创建新存档')
     step.value = 2
   }
 }

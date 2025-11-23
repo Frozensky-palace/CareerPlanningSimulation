@@ -15,7 +15,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/initial-setup',
     name: 'InitialSetup',
-    component: () => import('@/views/InitialSetup.vue')
+    component: () => import('@/views/InitialSetup.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/campus-map',
@@ -43,9 +44,14 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin',
-    name: 'Admin',
+    name: 'AdminLogin',
+    component: () => import('@/views/admin/AdminLogin.vue')
+  },
+  {
+    path: '/admin/dashboard',
+    name: 'AdminDashboard',
     component: () => import('@/views/admin/Dashboard.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAdmin: true }
   }
 ]
 
@@ -57,8 +63,18 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
+  const adminToken = localStorage.getItem('adminToken')
 
-  if (to.meta.requiresAuth && !token) {
+  // 管理员页面认证
+  if (to.meta.requiresAdmin) {
+    if (!adminToken) {
+      next('/admin')
+    } else {
+      next()
+    }
+  }
+  // 普通用户页面认证
+  else if (to.meta.requiresAuth && !token) {
     next('/login')
   } else {
     next()

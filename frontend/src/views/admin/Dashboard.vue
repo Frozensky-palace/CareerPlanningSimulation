@@ -1,7 +1,19 @@
 <template>
   <div class="admin-dashboard">
-    <!-- 顶部导航栏 -->
-    <TopNavBar @open-profile="showProfilePanel = true" />
+    <!-- 管理后台专用顶部导航栏 -->
+    <header class="admin-header">
+      <div class="header-left">
+        <el-icon :size="24" class="logo-icon"><School /></el-icon>
+        <span class="header-title">大学生涯模拟 - 后台管理</span>
+      </div>
+      <div class="header-right">
+        <span class="admin-name">{{ adminInfo?.username || '管理员' }}</span>
+        <el-button text type="danger" @click="handleLogout">
+          <el-icon><SwitchButton /></el-icon>
+          退出
+        </el-button>
+      </div>
+    </header>
 
     <!-- 主体内容 -->
     <div class="dashboard-container">
@@ -36,6 +48,10 @@
             <el-icon><User /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
+          <el-menu-item index="settings">
+            <el-icon><Setting /></el-icon>
+            <span>系统设置</span>
+          </el-menu-item>
         </el-menu>
       </aside>
 
@@ -60,7 +76,7 @@
             <div class="stat-card">
               <div class="stat-icon bg-green-500">
                 <el-icon :size="32"><DocumentCopy /></el-icon>
-              </el-icon>
+              </div>
               <div class="stat-content">
                 <span class="stat-label">总存档数</span>
                 <span class="stat-value">{{ stats.totalSaves }}</span>
@@ -93,62 +109,13 @@
             <!-- 剧本类型分布 -->
             <div class="data-card">
               <h3 class="card-title">剧本类型分布</h3>
-              <div class="type-distribution">
-                <div class="type-item">
-                  <div class="type-header">
-                    <el-tag type="primary">主线</el-tag>
-                    <span class="type-count">{{ stats.scriptsByType.main || 0 }}</span>
-                  </div>
-                  <el-progress
-                    :percentage="getScriptTypePercentage('main')"
-                    :show-text="false"
-                    color="#409EFF"
-                  />
-                </div>
-                <div class="type-item">
-                  <div class="type-header">
-                    <el-tag>支线</el-tag>
-                    <span class="type-count">{{ stats.scriptsByType.branch || 0 }}</span>
-                  </div>
-                  <el-progress
-                    :percentage="getScriptTypePercentage('branch')"
-                    :show-text="false"
-                    color="#909399"
-                  />
-                </div>
-                <div class="type-item">
-                  <div class="type-header">
-                    <el-tag type="warning">特殊</el-tag>
-                    <span class="type-count">{{ stats.scriptsByType.special || 0 }}</span>
-                  </div>
-                  <el-progress
-                    :percentage="getScriptTypePercentage('special')"
-                    :show-text="false"
-                    color="#E6A23C"
-                  />
-                </div>
-              </div>
+              <div ref="typeChartRef" class="chart-container"></div>
             </div>
 
             <!-- 场景分布 -->
             <div class="data-card">
               <h3 class="card-title">场景分布</h3>
-              <div class="location-list">
-                <div
-                  v-for="(count, location) in stats.scriptsByLocation"
-                  :key="location"
-                  class="location-item"
-                >
-                  <span class="location-name">{{ getLocationLabel(location) }}</span>
-                  <div class="location-bar-container">
-                    <div
-                      class="location-bar"
-                      :style="{ width: getLocationPercentage(location) + '%' }"
-                    ></div>
-                  </div>
-                  <span class="location-count">{{ count }}</span>
-                </div>
-              </div>
+              <div ref="locationChartRef" class="chart-container"></div>
             </div>
 
             <!-- 最近活动 -->
@@ -179,6 +146,21 @@
           <MapManagement />
         </div>
 
+        <!-- 勋章管理视图 -->
+        <div v-else-if="activeMenu === 'badges'" class="badges-view">
+          <BadgeManagement />
+        </div>
+
+        <!-- 用户管理视图 -->
+        <div v-else-if="activeMenu === 'users'" class="users-view">
+          <UserManagement />
+        </div>
+
+        <!-- 系统设置视图 -->
+        <div v-else-if="activeMenu === 'settings'" class="settings-view">
+          <SystemSettings />
+        </div>
+
         <!-- 其他视图占位 -->
         <div v-else class="placeholder-view">
           <el-icon :size="60" class="text-gray-300"><WarnTriangleFilled /></el-icon>
@@ -186,14 +168,12 @@
         </div>
       </main>
     </div>
-
-    <!-- 个人信息面板 -->
-    <UserProfile v-model="showProfilePanel" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Setting,
@@ -203,16 +183,42 @@ import {
   Medal,
   User,
   DocumentCopy,
-  WarnTriangleFilled
+  WarnTriangleFilled,
+  School,
+  SwitchButton
 } from '@element-plus/icons-vue'
-import TopNavBar from '@/components/layout/TopNavBar.vue'
-import UserProfile from '@/components/user/UserProfile.vue'
+import * as echarts from 'echarts'
+import type { EChartsOption } from 'echarts'
 import ScriptManagement from '@/components/admin/ScriptManagement.vue'
 import MapManagement from '@/components/admin/MapManagement.vue'
+import SystemSettings from '@/components/admin/SystemSettings.vue'
+import BadgeManagement from '@/components/admin/BadgeManagement.vue'
+import UserManagement from '@/components/admin/UserManagement.vue'
 import request from '@/services/api'
 
+const router = useRouter()
 const activeMenu = ref('dashboard')
-const showProfilePanel = ref(false)
+const typeChartRef = ref<HTMLDivElement>()
+const locationChartRef = ref<HTMLDivElement>()
+
+// 获取管理员信息
+const adminInfo = computed(() => {
+  const info = localStorage.getItem('adminInfo')
+  return info ? JSON.parse(info) : null
+})
+
+// 退出登录
+const handleLogout = async () => {
+  try {
+    await request.post('/admin/logout')
+  } catch (error) {
+    // 忽略错误，直接清除本地存储
+  }
+  localStorage.removeItem('adminToken')
+  localStorage.removeItem('adminInfo')
+  ElMessage.success('已退出登录')
+  router.push('/admin')
+}
 
 const stats = ref({
   totalUsers: 0,
@@ -227,20 +233,6 @@ const recentActivities = ref<any[]>([])
 
 const handleMenuSelect = (index: string) => {
   activeMenu.value = index
-}
-
-const getScriptTypePercentage = (type: string) => {
-  const total = stats.value.totalScripts
-  if (total === 0) return 0
-  const count = stats.value.scriptsByType[type] || 0
-  return Math.round((count / total) * 100)
-}
-
-const getLocationPercentage = (location: string) => {
-  const total = Object.values(stats.value.scriptsByLocation).reduce((sum, count) => sum + count, 0)
-  if (total === 0) return 0
-  const count = stats.value.scriptsByLocation[location] || 0
-  return Math.round((count / total) * 100)
 }
 
 const getLocationLabel = (location: string) => {
@@ -260,11 +252,156 @@ const formatDateTime = (date: string) => {
   return new Date(date).toLocaleString('zh-CN')
 }
 
+// 初始化剧本类型分布图表
+const initTypeChart = () => {
+  if (!typeChartRef.value) return
+
+  const chart = echarts.init(typeChartRef.value)
+  const data = [
+    { value: stats.value.scriptsByType.main || 0, name: '主线剧本', itemStyle: { color: '#409EFF' } },
+    { value: stats.value.scriptsByType.branch || 0, name: '支线剧本', itemStyle: { color: '#909399' } },
+    { value: stats.value.scriptsByType.special || 0, name: '特殊剧本', itemStyle: { color: '#E6A23C' } }
+  ]
+
+  const option: EChartsOption = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
+    },
+    legend: {
+      orient: 'horizontal',
+      bottom: '0%',
+      left: 'center'
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: ['50%', '70%'],
+        center: ['50%', '45%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: false
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 16,
+            fontWeight: 'bold'
+          },
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          }
+        },
+        labelLine: {
+          show: false
+        },
+        data: data,
+        animationType: 'scale',
+        animationEasing: 'elasticOut',
+        animationDelay: (idx) => idx * 100
+      }
+    ]
+  }
+
+  chart.setOption(option)
+
+  // 响应式
+  window.addEventListener('resize', () => chart.resize())
+}
+
+// 初始化场景分布图表
+const initLocationChart = () => {
+  if (!locationChartRef.value) return
+
+  const chart = echarts.init(locationChartRef.value)
+
+  // 使用蓝色系但色彩跨度更大的配色方案
+  const colors = [
+    '#0057D9',  // 深蓝
+    '#1A8FFF',  // 标准蓝
+    '#4BA3FF',  // 中蓝
+    '#7BBFFF',  // 浅蓝
+    '#A8D8FF',  // 很浅蓝
+    '#D4EDFF',  // 极浅蓝
+    '#0080FF'   // 鲜蓝
+  ]
+  const data = Object.entries(stats.value.scriptsByLocation).map(([location, count], index) => ({
+    value: count,
+    name: getLocationLabel(location),
+    itemStyle: { color: colors[index % colors.length] }
+  }))
+
+  const option: EChartsOption = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
+    },
+    legend: {
+      orient: 'horizontal',
+      bottom: '0%',
+      left: 'center',
+      type: 'scroll'
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: ['50%', '70%'],
+        center: ['50%', '45%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: false
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 16,
+            fontWeight: 'bold'
+          },
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          }
+        },
+        labelLine: {
+          show: false
+        },
+        data: data,
+        animationType: 'scale',
+        animationEasing: 'elasticOut',
+        animationDelay: (idx) => idx * 100
+      }
+    ]
+  }
+
+  chart.setOption(option)
+
+  // 响应式
+  window.addEventListener('resize', () => chart.resize())
+}
+
 const loadDashboardData = async () => {
   try {
     const res = await request.get('/admin/dashboard')
     stats.value = res.data.stats
     recentActivities.value = res.data.recentActivities || []
+
+    // 数据加载后初始化图表
+    await nextTick()
+    initTypeChart()
+    initLocationChart()
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
     ElMessage.error('加载仪表盘数据失败')
@@ -284,6 +421,45 @@ onMounted(() => {
   flex-direction: column;
   background-color: #f5f7fa;
   overflow: hidden;
+}
+
+/* 管理后台顶部导航 */
+.admin-header {
+  height: 56px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  color: #1A8FFF;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-name {
+  font-size: 14px;
+  color: #606266;
 }
 
 .dashboard-container {
@@ -419,71 +595,10 @@ onMounted(() => {
   margin: 0 0 16px 0;
 }
 
-/* 剧本类型分布 */
-.type-distribution {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.type-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.type-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.type-count {
-  font-size: 18px;
-  font-weight: 700;
-  color: #303133;
-}
-
-/* 场景分布 */
-.location-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.location-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.location-name {
-  width: 80px;
-  font-size: 13px;
-  color: #606266;
-}
-
-.location-bar-container {
-  flex: 1;
-  height: 20px;
-  background: #f5f7fa;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.location-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  border-radius: 10px;
-  transition: width 0.3s;
-}
-
-.location-count {
-  width: 40px;
-  text-align: right;
-  font-size: 14px;
-  font-weight: 600;
-  color: #303133;
+/* 图表容器 */
+.chart-container {
+  width: 100%;
+  height: 300px;
 }
 
 /* 活动表格 */

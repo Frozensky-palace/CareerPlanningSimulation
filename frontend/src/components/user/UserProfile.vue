@@ -156,7 +156,7 @@ import {
   Flag,
   Promotion,
   Calendar,
-  GraduationCap
+  Reading
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/userStore'
 import { useGameStore } from '@/stores/gameStore'
@@ -215,7 +215,7 @@ const getBadgeIcon = (iconName: string) => {
     Flag,
     Promotion,
     Calendar,
-    GraduationCap
+    Reading
   }
   return iconMap[iconName] || Trophy
 }

@@ -3,11 +3,11 @@
     <div class="nav-container">
       <!-- 左侧：Logo 和标题 -->
       <div class="nav-left">
-        <div class="logo-section">
-          <el-icon :size="28" class="logo-icon">
+        <div class="logo-section" @click="handleLogoClick">
+          <el-icon :size="24" class="logo-icon">
             <School />
           </el-icon>
-          <span class="title">大学生活模拟</span>
+          <span class="title">大学生涯模拟</span>
         </div>
       </div>
 
@@ -15,16 +15,18 @@
       <div v-if="showGameInfo" class="nav-center">
         <div class="game-info">
           <div class="info-item">
-            <el-icon :size="14"><Calendar /></el-icon>
+            <el-icon :size="16"><Calendar /></el-icon>
             <span>第 {{ currentSemester }} 学期</span>
           </div>
+          <div class="divider"></div>
           <div class="info-item">
-            <el-icon :size="14"><Clock /></el-icon>
+            <el-icon :size="16"><Clock /></el-icon>
             <span>第 {{ currentWeek }} 周</span>
           </div>
+          <div class="divider"></div>
           <div class="info-item">
-            <el-icon :size="14"><Document /></el-icon>
-            <span>剩余 {{ remainingEvents }} 事件</span>
+            <el-icon :size="16"><Document /></el-icon>
+            <span>{{ remainingEvents }} 事件</span>
           </div>
         </div>
       </div>
@@ -33,7 +35,8 @@
       <div class="nav-right">
         <!-- 五维属性快速预览 -->
         <div v-if="showAttributes" class="attributes-preview">
-          <div v-for="attr in attributes" :key="attr.key" class="attr-item" :style="{ color: attr.color }">
+          <div v-for="attr in attributes" :key="attr.key" class="attr-item">
+            <span class="attr-dot" :style="{ backgroundColor: attr.color }"></span>
             <span class="attr-label">{{ attr.label }}</span>
             <span class="attr-value">{{ attr.value }}</span>
           </div>
@@ -42,11 +45,11 @@
         <!-- 用户菜单 -->
         <el-dropdown @command="handleCommand" trigger="click">
           <div class="user-menu">
-            <el-avatar :size="32" class="user-avatar">
+            <el-avatar :size="28" class="user-avatar">
               <el-icon><User /></el-icon>
             </el-avatar>
             <span class="username">{{ username }}</span>
-            <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
+            <el-icon :size="14" class="dropdown-icon"><ArrowDown /></el-icon>
           </div>
           <template #dropdown>
             <el-dropdown-menu>
@@ -57,10 +60,6 @@
               <el-dropdown-item command="saves" v-if="showGameInfo">
                 <el-icon><Folder /></el-icon>
                 切换存档
-              </el-dropdown-item>
-              <el-dropdown-item command="admin" divided>
-                <el-icon><Setting /></el-icon>
-                后台管理
               </el-dropdown-item>
               <el-dropdown-item command="logout" divided>
                 <el-icon><SwitchButton /></el-icon>
@@ -127,19 +126,26 @@ const emit = defineEmits<{
   openProfile: []
 }>()
 
+const handleLogoClick = () => {
+  if (userStore.isLoggedIn) {
+    router.push('/initial-setup')
+  } else {
+    router.push('/')
+  }
+}
+
 const handleCommand = (command: string) => {
   switch (command) {
     case 'profile':
       emit('openProfile')
       break
     case 'saves':
+      gameStore.clearCurrentSave()
       router.push('/initial-setup')
-      break
-    case 'admin':
-      router.push('/admin')
       break
     case 'logout':
       userStore.logout()
+      gameStore.clearCurrentSave()
       router.push('/login')
       ElMessage.success('已退出登录')
       break
@@ -149,8 +155,8 @@ const handleCommand = (command: string) => {
 
 <style scoped>
 .top-nav-bar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
   position: relative;
   z-index: 1000;
 }
@@ -159,7 +165,7 @@ const handleCommand = (command: string) => {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 24px;
-  height: 64px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -174,25 +180,24 @@ const handleCommand = (command: string) => {
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: opacity 0.2s;
 }
 
 .logo-section:hover {
-  transform: scale(1.02);
+  opacity: 0.7;
 }
 
 .logo-icon {
-  color: #fff;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  color: #1A8FFF;
 }
 
 .title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 0.5px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  letter-spacing: 0.3px;
 }
 
 /* 中间 */
@@ -204,25 +209,31 @@ const handleCommand = (command: string) => {
 
 .game-info {
   display: flex;
-  gap: 24px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  padding: 8px 20px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  align-items: center;
+  gap: 16px;
+  padding: 6px 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
 }
 
 .info-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #fff;
+  color: #495057;
   font-size: 13px;
   font-weight: 500;
 }
 
 .info-item .el-icon {
-  opacity: 0.9;
+  color: #1A8FFF;
+}
+
+.divider {
+  width: 1px;
+  height: 14px;
+  background: #dee2e6;
 }
 
 /* 右侧 */
@@ -235,70 +246,73 @@ const handleCommand = (command: string) => {
 
 .attributes-preview {
   display: flex;
-  gap: 12px;
-  padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  gap: 14px;
+  padding: 6px 14px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
 }
 
 .attr-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: 12px;
-  font-weight: 600;
+  color: #495057;
+}
+
+.attr-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
 }
 
 .attr-label {
-  opacity: 0.9;
+  font-weight: 500;
 }
 
 .attr-value {
   font-weight: 700;
+  color: #2c3e50;
 }
 
 .user-menu {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 12px 6px 6px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  background: #f8f9fa;
+  border-radius: 14px;
+  border: 1px solid #e9ecef;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .user-menu:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-1px);
+  background: #e9ecef;
+  border-color: #dee2e6;
 }
 
 .user-avatar {
-  background: rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, #1A8FFF 0%, #0070E0 100%);
   color: #fff;
-  font-weight: 600;
 }
 
 .username {
-  color: #fff;
+  color: #2c3e50;
   font-size: 14px;
   font-weight: 500;
 }
 
 .dropdown-icon {
-  color: #fff;
-  font-size: 12px;
-  opacity: 0.8;
+  color: #6c757d;
 }
 
 /* 响应式 */
 @media (max-width: 768px) {
   .nav-container {
     padding: 0 16px;
+    height: 52px;
   }
 
   .title {
@@ -306,8 +320,12 @@ const handleCommand = (command: string) => {
   }
 
   .game-info {
-    gap: 12px;
-    padding: 6px 12px;
+    gap: 10px;
+    padding: 5px 12px;
+  }
+
+  .info-item {
+    font-size: 12px;
   }
 
   .attributes-preview {

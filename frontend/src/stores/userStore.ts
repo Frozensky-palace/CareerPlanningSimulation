@@ -9,7 +9,8 @@ export const useUserStore = defineStore('user', {
 
   getters: {
     isLoggedIn: (state) => !!state.token,
-    userId: (state) => state.user?.id || 0
+    userId: (state) => state.user?.id || 0,
+    username: (state) => state.user?.username || ''
   },
 
   actions: {

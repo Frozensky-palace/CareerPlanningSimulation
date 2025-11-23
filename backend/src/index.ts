@@ -20,7 +20,7 @@ import { seedDatabase } from './seeds/scripts.js'
 dotenv.config()
 
 const app = express()
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 5000 // server port
 
 // 中间件
 app.use(cors())
@@ -56,14 +56,12 @@ const startServer = async () => {
     await sequelize.authenticate()
     console.log('✓ Database connected successfully')
 
-    // 跳过数据库同步（表已存在）
-    // 如需重新同步，请手动删除数据库表后重启服务
-    console.log('✓ Database tables already exist, skipping sync')
+    // 同步数据库（alter: true 会自动添加新表和新列，但不删除现有数据）
+    await sequelize.sync({ alter: true })
+    console.log('✓ Database tables synchronized')
 
     // 插入种子数据
-    if (process.env.NODE_ENV === 'development') {
-      await seedDatabase()
-    }
+    await seedDatabase()
 
     app.listen(PORT, () => {
       console.log(`✓ Server is running on http://localhost:${PORT}`)

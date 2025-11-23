@@ -158,15 +158,43 @@ interface ScriptPosition {
 
 const scriptPositions = ref<ScriptPosition[]>([])
 
-// 默认位置配置
+// 默认位置配置 - 根据典型校园地图布局优化
 const defaultPositions: Record<string, { x: number; y: number }[]> = {
-  gate: [{ x: 50, y: 85 }],
-  plaza: [{ x: 50, y: 65 }],
-  library: [{ x: 25, y: 40 }, { x: 75, y: 40 }],
-  academic: [{ x: 30, y: 25 }, { x: 70, y: 25 }],
-  dormitory: [{ x: 15, y: 70 }],
-  stadium: [{ x: 85, y: 70 }],
-  campus: [{ x: 50, y: 50 }]
+  gate: [
+    { x: 50, y: 90 },  // 校门口 - 地图底部中央
+    { x: 48, y: 88 }   // 校门附近第二个位置
+  ],
+  plaza: [
+    { x: 50, y: 72 },  // 广场 - 校门进来后的中央区域
+    { x: 45, y: 75 },
+    { x: 55, y: 75 }
+  ],
+  library: [
+    { x: 28, y: 45 },  // 图书馆 - 左中区域
+    { x: 32, y: 48 },
+    { x: 25, y: 50 }
+  ],
+  dormitory: [
+    { x: 18, y: 62 },  // 宿舍 - 左下区域
+    { x: 15, y: 68 },
+    { x: 22, y: 65 }
+  ],
+  stadium: [
+    { x: 82, y: 62 },  // 体育馆 - 右下区域
+    { x: 85, y: 68 },
+    { x: 78, y: 65 }
+  ],
+  academic: [
+    { x: 72, y: 45 },  // 教学楼 - 右中区域
+    { x: 68, y: 48 },
+    { x: 75, y: 50 }
+  ],
+  campus: [
+    { x: 50, y: 35 },  // 校园中央 - 上中区域
+    { x: 45, y: 38 },
+    { x: 55, y: 38 },
+    { x: 50, y: 42 }
+  ]
 }
 
 const filteredPositions = computed(() => {
@@ -370,6 +398,7 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  padding: 24px;
 }
 
 .management-header {
@@ -377,7 +406,6 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-  padding: 0 24px;
 }
 
 .page-title {
@@ -396,8 +424,8 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   gap: 20px;
-  padding: 0 24px 24px;
   overflow: hidden;
+  min-height: 0;
 }
 
 /* 左侧地图预览 */
@@ -409,6 +437,8 @@ onUnmounted(() => {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .preview-header {
@@ -416,6 +446,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .preview-header h3 {
@@ -427,23 +458,22 @@ onUnmounted(() => {
 
 .map-canvas-wrapper {
   flex: 1;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 8px;
   background: #1a1f2e;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .map-canvas {
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 0;
+  padding-bottom: 75%; /* 4:3 宽高比 */
   cursor: default;
-}
-
-.map-canvas.show-grid {
-  background-image:
-    repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 10%),
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 10%);
-  background-size: 10% 10%;
+  max-height: 100%;
 }
 
 .map-background {
@@ -452,9 +482,25 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
   pointer-events: none;
+}
+
+/* 网格覆盖层 - 放在图片上面 */
+.map-canvas.show-grid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 1px, transparent 1px, transparent 10%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 1px, transparent 1px, transparent 10%);
+  background-size: 10% 10%;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .draggable-button {

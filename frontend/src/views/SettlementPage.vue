@@ -1,9 +1,9 @@
 <template>
   <div class="min-h-screen bg-primary-light flex flex-col">
-    <!-- 黑色顶块 -->
-    <header class="bg-contrast text-white py-3 px-6 shadow-medium">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white border-b border-gray-100 py-3 px-6">
       <div class="max-w-4xl mx-auto">
-        <span class="font-semibold text-lg">阶段结算</span>
+        <span class="font-semibold text-lg text-gray-800">阶段结算</span>
       </div>
     </header>
 

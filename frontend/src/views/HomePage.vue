@@ -14,16 +14,23 @@
       <div class="dot-pattern"></div>
     </div>
 
-    <!-- 黑色顶块 -->
-    <header class="bg-contrast text-white py-3 px-6 shadow-medium relative z-10">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white border-b border-gray-100 py-3 px-6 relative z-10">
       <div class="max-w-6xl mx-auto flex justify-between items-center">
         <div class="flex items-center gap-2">
-          <el-icon :size="24" class="text-secondary-500"><Connection /></el-icon>
-          <span class="font-semibold text-lg">易班·数字孪生</span>
+          <el-icon :size="24" class="text-secondary-500"><School /></el-icon>
+          <span class="font-semibold text-lg text-gray-800">大学生涯模拟</span>
         </div>
-        <nav class="flex gap-4 text-sm">
-          <span class="opacity-60 hover:opacity-100 cursor-pointer transition-opacity">关于</span>
-          <span class="opacity-60 hover:opacity-100 cursor-pointer transition-opacity">帮助</span>
+        <nav class="flex gap-6 items-center">
+          <span class="text-sm text-gray-500 hover:text-secondary-500 cursor-pointer transition-colors">关于</span>
+          <span class="text-sm text-gray-500 hover:text-secondary-500 cursor-pointer transition-colors">帮助</span>
+          <span
+            class="text-sm text-gray-600 hover:text-secondary-500 cursor-pointer transition-colors flex items-center gap-1"
+            @click="handleAdmin"
+          >
+            <el-icon :size="14"><Setting /></el-icon>
+            后台管理
+          </span>
         </nav>
       </div>
     </header>
@@ -107,23 +114,28 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
+import { useGameStore } from '@/stores/gameStore'
 import {
-  Connection,
   School,
   VideoPlay,
   User,
   UserFilled,
   Document,
-  Star
+  Star,
+  Setting
 } from '@element-plus/icons-vue'
 import FeatureCard from '@/components/home/FeatureCard.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
+const gameStore = useGameStore()
 
 const handleStart = () => {
+  console.log('handleStart - isLoggedIn:', userStore.isLoggedIn, 'currentSave:', !!gameStore.currentSave)
+
   if (userStore.isLoggedIn) {
-    router.push('/campus-map')
+    // 已登录，直接进入存档选择页面
+    router.push('/initial-setup')
   } else {
     router.push('/login')
   }
@@ -131,6 +143,11 @@ const handleStart = () => {
 
 const handleLogin = () => {
   router.push('/login')
+}
+
+const handleAdmin = () => {
+  // 直接跳转，让路由守卫处理认证检查
+  router.push('/admin')
 }
 </script>
 

@@ -118,3 +118,61 @@
     backdrop-filter: blur(12px) saturate(180%);
   }
 }
+
+/* Element Plus 按钮主题覆盖 - 确保足够的对比度 */
+.el-button--primary {
+  --el-button-bg-color: #1A8FFF !important;
+  --el-button-border-color: #1A8FFF !important;
+  --el-button-hover-bg-color: #0070E0 !important;
+  --el-button-hover-border-color: #0070E0 !important;
+  --el-button-active-bg-color: #0057D9 !important;
+  --el-button-active-border-color: #0057D9 !important;
+  --el-button-text-color: #ffffff !important;
+  background-color: #1A8FFF !important;
+  border-color: #1A8FFF !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 4px rgba(26, 143, 255, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.el-button--primary span {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.el-button--primary:hover {
+  background-color: #0070E0 !important;
+  border-color: #0070E0 !important;
+  box-shadow: 0 4px 8px rgba(26, 143, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.el-button--primary:active {
+  background-color: #0057D9 !important;
+  border-color: #0057D9 !important;
+  transform: translateY(0) !important;
+}
+
+.el-button--primary.is-disabled {
+  --el-button-bg-color: #a0cfff !important;
+  --el-button-border-color: #a0cfff !important;
+  --el-button-text-color: #ffffff !important;
+  background-color: #a0cfff !important;
+  border-color: #a0cfff !important;
+  opacity: 0.6 !important;
+}
+
+/* 其他按钮类型的优化 */
+.el-button--success {
+  font-weight: 500;
+}
+
+.el-button--warning {
+  font-weight: 500;
+}
+
+.el-button--danger {
+  font-weight: 500;
+}
