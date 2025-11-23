@@ -104,19 +104,53 @@ const loading = ref(true)
 const availableScripts = ref<Script[]>([])
 const showProfilePanel = ref(false)
 const viewMode = ref<'map' | 'list'>('map')  // 地图视图或列表视图
+const savedPositions = ref<Record<string, { x: number; y: number }[]>>({})
+
+// 默认位置（当后台没有保存时使用）
+const defaultPositions: Record<string, { x: number; y: number }[]> = {
+  dormitory: [
+    { x: 14, y: 18 },
+    { x: 10, y: 15 },
+    { x: 18, y: 22 }
+  ],
+  library: [
+    { x: 15, y: 45 },
+    { x: 12, y: 42 },
+    { x: 18, y: 48 }
+  ],
+  academic: [
+    { x: 40, y: 18 },
+    { x: 35, y: 15 },
+    { x: 45, y: 22 }
+  ],
+  plaza: [
+    { x: 40, y: 50 },
+    { x: 35, y: 48 },
+    { x: 45, y: 52 }
+  ],
+  campus: [
+    { x: 67, y: 42 },
+    { x: 62, y: 38 },
+    { x: 72, y: 46 },
+    { x: 67, y: 50 }
+  ],
+  stadium: [
+    { x: 88, y: 18 },
+    { x: 84, y: 15 },
+    { x: 92, y: 22 }
+  ],
+  gate: [
+    { x: 50, y: 80 },
+    { x: 45, y: 78 }
+  ]
+}
 
 // 为每个事件分配地图位置
 const scriptPositions = computed(() => {
-  // 预设的地图位置（根据场景分布）
-  const locationPositions: Record<string, { x: number; y: number }[]> = {
-    gate: [{ x: 50, y: 85 }],  // 校门口（底部中央）
-    plaza: [{ x: 50, y: 65 }],  // 广场（中下）
-    library: [{ x: 25, y: 40 }, { x: 75, y: 40 }],  // 图书馆（左右两侧中部）
-    academic: [{ x: 30, y: 25 }, { x: 70, y: 25 }],  // 教学楼（上部左右）
-    dormitory: [{ x: 15, y: 70 }],  // 宿舍（左下）
-    stadium: [{ x: 85, y: 70 }],  // 体育馆（右下）
-    campus: [{ x: 50, y: 50 }]  // 其他（中央）
-  }
+  // 使用后台保存的位置，如果没有则使用默认位置
+  const locationPositions = Object.keys(savedPositions.value).length > 0
+    ? savedPositions.value
+    : defaultPositions
 
   const result: Array<{ script: Script; position: { x: number; y: number } }> = []
   const usedPositions = new Map<string, number>()  // 记录每个位置使用次数
@@ -141,6 +175,18 @@ const scriptPositions = computed(() => {
 
   return result
 })
+
+const loadMapPositions = async () => {
+  try {
+    const res = await request.get('/scripts/map-positions')
+    if (res.data?.positions && Object.keys(res.data.positions).length > 0) {
+      savedPositions.value = res.data.positions
+    }
+  } catch (error) {
+    console.error('加载地图位置配置失败:', error)
+    // 失败时使用默认位置，不需要提示用户
+  }
+}
 
 const loadScripts = async () => {
   try {
@@ -174,12 +220,14 @@ const handleImageError = (e: Event) => {
   ElMessage.error('背景图片加载失败，请检查图片路径')
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!gameStore.currentSave) {
     ElMessage.warning('请先选择存档')
     router.push('/initial-setup')
     return
   }
+  // 先加载地图位置配置，再加载事件
+  await loadMapPositions()
   loadScripts()
 })
 </script>

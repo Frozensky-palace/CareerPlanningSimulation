@@ -57,7 +57,12 @@ request.interceptors.response.use(
     return res
   },
   (error) => {
-    ElMessage.error(error.response?.data?.error || error.message || '网络错误')
+    // 404错误通常是资源不存在，不需要显示弹窗
+    // 401错误由前面的code检查处理
+    const status = error.response?.status
+    if (status !== 404 && status !== 401) {
+      ElMessage.error(error.response?.data?.error || error.message || '网络错误')
+    }
     return Promise.reject(error)
   }
 )

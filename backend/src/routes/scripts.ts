@@ -1,6 +1,6 @@
 import express from 'express'
 import { authMiddleware, AuthRequest } from '../middleware/auth.js'
-import { Script, Save } from '../models/index.js'
+import { Script, Save, SystemSetting } from '../models/index.js'
 import { Op } from 'sequelize'
 
 const router = express.Router()
@@ -125,6 +125,26 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
     res.status(500).json({
       code: 500,
       message: error.message || '获取剧本列表失败'
+    })
+  }
+})
+
+// 获取地图位置配置（普通用户可访问，必须放在 /:id 路由之前）
+router.get('/map-positions', async (req, res) => {
+  try {
+    const setting = await SystemSetting.findOne({ where: { key: 'map_positions' } })
+    const positions = setting ? JSON.parse(setting.value) : {}
+
+    res.json({
+      code: 200,
+      message: '获取成功',
+      data: { positions }
+    })
+  } catch (error: any) {
+    console.error('Get map positions error:', error)
+    res.status(500).json({
+      code: 500,
+      message: error.message || '获取地图位置配置失败'
     })
   }
 })

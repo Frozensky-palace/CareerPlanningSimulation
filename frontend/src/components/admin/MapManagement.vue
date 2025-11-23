@@ -19,6 +19,12 @@
           <h3>地图预览</h3>
           <div class="preview-controls">
             <el-switch
+              v-model="showLocationZones"
+              active-text="显示场景区域"
+              inactive-text="隐藏区域"
+              style="margin-right: 16px"
+            />
+            <el-switch
               v-model="showGrid"
               active-text="显示网格"
               inactive-text="隐藏网格"
@@ -40,6 +46,23 @@
               class="map-background"
               @error="handleImageError"
             />
+
+            <!-- 场景区域覆盖层 -->
+            <div v-if="showLocationZones" class="location-zones-overlay">
+              <div
+                v-for="(zone, location) in locationZones"
+                :key="location"
+                class="location-zone"
+                :style="{
+                  left: zone.x + '%',
+                  top: zone.y + '%',
+                  width: zone.width + '%',
+                  height: zone.height + '%'
+                }"
+              >
+                <span class="zone-label">{{ getLocationLabel(location) }}</span>
+              </div>
+            </div>
 
             <!-- 可拖拽的事件按钮 -->
             <div
@@ -145,6 +168,7 @@ import type { Script } from '@/types'
 
 const saving = ref(false)
 const showGrid = ref(true)
+const showLocationZones = ref(false)
 const filterLocation = ref('')
 const selectedScriptId = ref<number | null>(null)
 const mapCanvasRef = ref<HTMLElement | null>(null)
@@ -158,42 +182,53 @@ interface ScriptPosition {
 
 const scriptPositions = ref<ScriptPosition[]>([])
 
-// 默认位置配置 - 根据典型校园地图布局优化
+// 场景区域定义（根据实际地图布局划分）
+const locationZones: Record<string, { x: number; y: number; width: number; height: number }> = {
+  dormitory: { x: 5, y: 8, width: 18, height: 22 },     // 宿舍 - 左上区域（红色建筑群）
+  library: { x: 5, y: 32, width: 20, height: 25 },      // 图书馆 - 左中区域（绿色草坪区）
+  academic: { x: 28, y: 5, width: 25, height: 30 },     // 教学楼 - 中上区域（主教学楼群）
+  plaza: { x: 28, y: 38, width: 25, height: 25 },       // 广场 - 中心区域（中央广场）
+  campus: { x: 56, y: 25, width: 22, height: 35 },      // 校园 - 右中区域（图书馆、体育场）
+  stadium: { x: 80, y: 8, width: 17, height: 25 },      // 体育馆 - 右上区域（体育设施）
+  gate: { x: 38, y: 68, width: 24, height: 25 }         // 校门口 - 底部中央（入口区域）
+}
+
+// 默认位置配置 - 根据实际地图场景位置
 const defaultPositions: Record<string, { x: number; y: number }[]> = {
-  gate: [
-    { x: 50, y: 90 },  // 校门口 - 地图底部中央
-    { x: 48, y: 88 }   // 校门附近第二个位置
-  ],
-  plaza: [
-    { x: 50, y: 72 },  // 广场 - 校门进来后的中央区域
-    { x: 45, y: 75 },
-    { x: 55, y: 75 }
+  dormitory: [
+    { x: 14, y: 18 },  // 宿舍区中心
+    { x: 10, y: 15 },
+    { x: 18, y: 22 }
   ],
   library: [
-    { x: 28, y: 45 },  // 图书馆 - 左中区域
-    { x: 32, y: 48 },
-    { x: 25, y: 50 }
-  ],
-  dormitory: [
-    { x: 18, y: 62 },  // 宿舍 - 左下区域
-    { x: 15, y: 68 },
-    { x: 22, y: 65 }
-  ],
-  stadium: [
-    { x: 82, y: 62 },  // 体育馆 - 右下区域
-    { x: 85, y: 68 },
-    { x: 78, y: 65 }
+    { x: 15, y: 45 },  // 图书馆区域
+    { x: 12, y: 42 },
+    { x: 18, y: 48 }
   ],
   academic: [
-    { x: 72, y: 45 },  // 教学楼 - 右中区域
-    { x: 68, y: 48 },
-    { x: 75, y: 50 }
+    { x: 40, y: 18 },  // 教学楼中心
+    { x: 35, y: 15 },
+    { x: 45, y: 22 }
+  ],
+  plaza: [
+    { x: 40, y: 50 },  // 广场中心
+    { x: 35, y: 48 },
+    { x: 45, y: 52 }
   ],
   campus: [
-    { x: 50, y: 35 },  // 校园中央 - 上中区域
-    { x: 45, y: 38 },
-    { x: 55, y: 38 },
-    { x: 50, y: 42 }
+    { x: 67, y: 42 },  // 校园中央
+    { x: 62, y: 38 },
+    { x: 72, y: 46 },
+    { x: 67, y: 50 }
+  ],
+  stadium: [
+    { x: 88, y: 18 },  // 体育馆
+    { x: 84, y: 15 },
+    { x: 92, y: 22 }
+  ],
+  gate: [
+    { x: 50, y: 80 },  // 校门口
+    { x: 45, y: 78 }
   ]
 }
 
@@ -470,10 +505,8 @@ onUnmounted(() => {
 .map-canvas {
   position: relative;
   width: 100%;
-  height: 0;
-  padding-bottom: 75%; /* 4:3 宽高比 */
+  height: 100%;
   cursor: default;
-  max-height: 100%;
 }
 
 .map-background {
@@ -482,7 +515,7 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   pointer-events: none;
 }
@@ -628,5 +661,45 @@ onUnmounted(() => {
 
 .position-input {
   flex: 1;
+}
+
+/* 场景区域覆盖层 */
+.location-zones-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.location-zone {
+  position: absolute;
+  border: 2px dashed rgba(26, 143, 255, 0.6);
+  background: rgba(26, 143, 255, 0.08);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.location-zone:hover {
+  background: rgba(26, 143, 255, 0.15);
+  border-color: rgba(26, 143, 255, 0.9);
+}
+
+.zone-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A8FFF;
+  text-shadow:
+    -1px -1px 0 #fff,
+    1px -1px 0 #fff,
+    -1px 1px 0 #fff,
+    1px 1px 0 #fff,
+    0 0 8px rgba(255, 255, 255, 0.9);
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  white-space: nowrap;
 }
 </style>
