@@ -16,14 +16,16 @@
       <div v-else-if="viewMode === 'map'" class="map-view">
         <!-- 背景地图图片 -->
         <img
+          ref="mapImageRef"
           src="/images/campus-bg.webp"
           alt="校园地图"
           class="map-background"
+          @load="handleImageLoad"
           @error="handleImageError"
         />
 
         <!-- 地图上的事件按钮 -->
-        <div class="button-layer">
+        <div ref="buttonLayerRef" class="button-layer" :style="buttonLayerStyle">
           <MapEventButton
             v-for="(item, index) in scriptPositions"
             :key="item.script.id"
@@ -85,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Loading, DocumentChecked } from '@element-plus/icons-vue'
@@ -105,6 +107,9 @@ const availableScripts = ref<Script[]>([])
 const showProfilePanel = ref(false)
 const viewMode = ref<'map' | 'list'>('map')  // 地图视图或列表视图
 const savedPositions = ref<Record<string, { x: number; y: number }[]>>({})
+const mapImageRef = ref<HTMLImageElement>()
+const buttonLayerRef = ref<HTMLDivElement>()
+const buttonLayerStyle = ref<Record<string, string>>({})
 
 // 默认位置（当后台没有保存时使用）
 const defaultPositions: Record<string, { x: number; y: number }[]> = {
@@ -156,7 +161,13 @@ const scriptPositions = computed(() => {
   const usedPositions = new Map<string, number>()  // 记录每个位置使用次数
 
   availableScripts.value.forEach(script => {
-    const positions = locationPositions[script.location] || locationPositions.campus
+    const positions = locationPositions[script.location] || locationPositions['campus'] || []
+
+    if (positions.length === 0) {
+      // 如果没有找到位置配置，跳过这个脚本
+      return
+    }
+
     const locationKey = script.location
     const usedCount = usedPositions.get(locationKey) || 0
     const posIndex = usedCount % positions.length
@@ -176,11 +187,35 @@ const scriptPositions = computed(() => {
   return result
 })
 
+const scripts = ref<Script[]>([])  // 保存完整的脚本列表用于位置映射
+
 const loadMapPositions = async () => {
   try {
     const res = await request.get('/scripts/map-positions')
     if (res.data?.positions && Object.keys(res.data.positions).length > 0) {
-      savedPositions.value = res.data.positions
+      // 后端返回的是 scriptId -> {x, y} 的映射
+      // 需要转换为 location -> [{x, y}] 的映射
+      const scriptPositions = res.data.positions
+      const locationBased: Record<string, { x: number; y: number }[]> = {}
+
+      // 遍历所有剧本，根据location分组位置
+      scripts.value.forEach(script => {
+        const position = scriptPositions[script.id]
+        if (position) {
+          if (!locationBased[script.location]) {
+            locationBased[script.location] = []
+          }
+          locationBased[script.location].push({
+            x: position.x,
+            y: position.y
+          })
+        }
+      })
+
+      // 只有在成功转换后才更新
+      if (Object.keys(locationBased).length > 0) {
+        savedPositions.value = locationBased
+      }
     }
   } catch (error) {
     console.error('加载地图位置配置失败:', error)
@@ -198,9 +233,11 @@ const loadScripts = async () => {
         includeAll: true  // 包含所有状态的事件
       }
     })
-    availableScripts.value = res.data?.scripts || []
+    scripts.value = res.data?.scripts || []
+    availableScripts.value = scripts.value
   } catch (error) {
     console.error(error)
+    scripts.value = []
     availableScripts.value = []
   } finally {
     loading.value = false
@@ -215,9 +252,63 @@ const handleSettlement = () => {
   router.push('/settlement')
 }
 
+// 计算按钮层的位置和尺寸，使其与图片完全对齐
+const updateButtonLayerPosition = () => {
+  if (!mapImageRef.value) return
+
+  const img = mapImageRef.value
+  const containerWidth = img.parentElement?.clientWidth || 0
+  const containerHeight = img.parentElement?.clientHeight || 0
+  const imgNaturalWidth = img.naturalWidth
+  const imgNaturalHeight = img.naturalHeight
+
+  if (!imgNaturalWidth || !imgNaturalHeight) return
+
+  // 计算图片实际显示的宽高（object-fit: contain）
+  const containerRatio = containerWidth / containerHeight
+  const imageRatio = imgNaturalWidth / imgNaturalHeight
+
+  let displayWidth: number
+  let displayHeight: number
+  let offsetX: number
+  let offsetY: number
+
+  if (containerRatio > imageRatio) {
+    // 容器更宽，图片高度占满，宽度居中
+    displayHeight = containerHeight
+    displayWidth = displayHeight * imageRatio
+    offsetX = (containerWidth - displayWidth) / 2
+    offsetY = 0
+  } else {
+    // 容器更高，图片宽度占满，高度居中
+    displayWidth = containerWidth
+    displayHeight = displayWidth / imageRatio
+    offsetX = 0
+    offsetY = (containerHeight - displayHeight) / 2
+  }
+
+  buttonLayerStyle.value = {
+    position: 'absolute',
+    left: `${offsetX}px`,
+    top: `${offsetY}px`,
+    width: `${displayWidth}px`,
+    height: `${displayHeight}px`,
+    pointerEvents: 'none'
+  }
+}
+
+const handleImageLoad = () => {
+  updateButtonLayerPosition()
+}
+
 const handleImageError = (e: Event) => {
   console.error('背景图片加载失败:', e)
   ElMessage.error('背景图片加载失败，请检查图片路径')
+}
+
+// 监听窗口大小变化
+const handleResize = () => {
+  updateButtonLayerPosition()
 }
 
 onMounted(async () => {
@@ -226,9 +317,17 @@ onMounted(async () => {
     router.push('/initial-setup')
     return
   }
-  // 先加载地图位置配置，再加载事件
-  await loadMapPositions()
-  loadScripts()
+  // 先加载脚本列表，然后加载地图位置配置（不阻塞页面渲染）
+  loadScripts().finally(() => {
+    loadMapPositions()
+  })
+
+  // 监听窗口大小变化
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
@@ -265,15 +364,6 @@ onMounted(async () => {
   height: 100%;
   object-fit: contain;
   object-position: center;
-}
-
-.button-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
 }
 
 .button-layer > * {

@@ -41,48 +41,58 @@
           >
             <!-- 背景地图 -->
             <img
+              ref="mapImageRef"
               src="/images/campus-bg.webp"
               alt="校园地图"
               class="map-background"
+              @load="handleImageLoad"
               @error="handleImageError"
             />
 
-            <!-- 场景区域覆盖层 -->
-            <div v-if="showLocationZones" class="location-zones-overlay">
-              <div
-                v-for="(zone, location) in locationZones"
-                :key="location"
-                class="location-zone"
-                :style="{
-                  left: zone.x + '%',
-                  top: zone.y + '%',
-                  width: zone.width + '%',
-                  height: zone.height + '%'
-                }"
-              >
-                <span class="zone-label">{{ getLocationLabel(location) }}</span>
-              </div>
-            </div>
-
-            <!-- 可拖拽的事件按钮 -->
+            <!-- 交互层：包含网格、场景区域和按钮 -->
             <div
-              v-for="item in scriptPositions"
-              :key="item.script.id"
-              class="draggable-button"
-              :class="{ active: selectedScriptId === item.script.id }"
-              :style="{
-                left: item.position.x + '%',
-                top: item.position.y + '%'
-              }"
-              @mousedown="handleMouseDown($event, item.script.id)"
-              @click.stop="handleSelectScript(item.script.id)"
+              ref="interactionLayerRef"
+              class="interaction-layer"
+              :class="{ 'show-grid': showGrid }"
+              :style="interactionLayerStyle"
             >
-              <div class="button-content">
-                <el-tag :type="getTypeTagStyle(item.script.type)" size="small">
-                  {{ item.script.title }}
-                </el-tag>
-                <div class="position-info">
-                  {{ Math.round(item.position.x) }}, {{ Math.round(item.position.y) }}
+              <!-- 场景区域覆盖层 -->
+              <div v-if="showLocationZones" class="location-zones-overlay">
+                <div
+                  v-for="(zone, location) in locationZones"
+                  :key="location"
+                  class="location-zone"
+                  :style="{
+                    left: zone.x + '%',
+                    top: zone.y + '%',
+                    width: zone.width + '%',
+                    height: zone.height + '%'
+                  }"
+                >
+                  <span class="zone-label">{{ getLocationLabel(location) }}</span>
+                </div>
+              </div>
+
+              <!-- 可拖拽的事件按钮 -->
+              <div
+                v-for="item in scriptPositions"
+                :key="item.script.id"
+                class="draggable-button"
+                :class="{ active: selectedScriptId === item.script.id }"
+                :style="{
+                  left: item.position.x + '%',
+                  top: item.position.y + '%'
+                }"
+                @mousedown="handleMouseDown($event, item.script.id)"
+                @click.stop="handleSelectScript(item.script.id)"
+              >
+                <div class="button-content">
+                  <el-tag :type="getTypeTagStyle(item.script.type)" size="small">
+                    {{ item.script.title }}
+                  </el-tag>
+                  <div class="position-info">
+                    {{ Math.round(item.position.x) }}, {{ Math.round(item.position.y) }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -172,6 +182,9 @@ const showLocationZones = ref(false)
 const filterLocation = ref('')
 const selectedScriptId = ref<number | null>(null)
 const mapCanvasRef = ref<HTMLElement | null>(null)
+const mapImageRef = ref<HTMLImageElement>()
+const interactionLayerRef = ref<HTMLDivElement>()
+const interactionLayerStyle = ref<Record<string, string>>({})
 const draggingScriptId = ref<number | null>(null)
 const dragOffset = ref({ x: 0, y: 0 })
 
@@ -322,6 +335,61 @@ const loadScriptPositions = async () => {
   }
 }
 
+// 计算交互层的位置和尺寸，使其与图片完全对齐
+const updateInteractionLayerPosition = () => {
+  if (!mapImageRef.value) return
+
+  const img = mapImageRef.value
+  const containerWidth = img.parentElement?.clientWidth || 0
+  const containerHeight = img.parentElement?.clientHeight || 0
+  const imgNaturalWidth = img.naturalWidth
+  const imgNaturalHeight = img.naturalHeight
+
+  if (!imgNaturalWidth || !imgNaturalHeight) return
+
+  // 计算图片实际显示的宽高（object-fit: contain）
+  const containerRatio = containerWidth / containerHeight
+  const imageRatio = imgNaturalWidth / imgNaturalHeight
+
+  let displayWidth: number
+  let displayHeight: number
+  let offsetX: number
+  let offsetY: number
+
+  if (containerRatio > imageRatio) {
+    // 容器更宽，图片高度占满，宽度居中
+    displayHeight = containerHeight
+    displayWidth = displayHeight * imageRatio
+    offsetX = (containerWidth - displayWidth) / 2
+    offsetY = 0
+  } else {
+    // 容器更高，图片宽度占满，高度居中
+    displayWidth = containerWidth
+    displayHeight = displayWidth / imageRatio
+    offsetX = 0
+    offsetY = (containerHeight - displayHeight) / 2
+  }
+
+  interactionLayerStyle.value = {
+    position: 'absolute',
+    left: `${offsetX}px`,
+    top: `${offsetY}px`,
+    width: `${displayWidth}px`,
+    height: `${displayHeight}px`,
+    pointerEvents: 'auto'
+  }
+
+  console.log('交互层位置已更新:', interactionLayerStyle.value)
+}
+
+const handleImageLoad = () => {
+  console.log('地图图片已加载')
+  // 使用 nextTick 确保 DOM 更新完成
+  setTimeout(() => {
+    updateInteractionLayerPosition()
+  }, 0)
+}
+
 const handleSelectScript = (scriptId: number) => {
   selectedScriptId.value = scriptId
 }
@@ -343,16 +411,16 @@ const handleMouseDown = (event: MouseEvent, scriptId: number) => {
 }
 
 const handleMouseMove = (event: MouseEvent) => {
-  if (!draggingScriptId.value || !mapCanvasRef.value) return
+  if (!draggingScriptId.value || !interactionLayerRef.value) return
 
-  const canvas = mapCanvasRef.value
-  const canvasRect = canvas.getBoundingClientRect()
+  const layer = interactionLayerRef.value
+  const layerRect = layer.getBoundingClientRect()
 
-  // 计算相对于画布的位置百分比
-  const x = ((event.clientX - canvasRect.left - dragOffset.value.x) / canvasRect.width) * 100
-  const y = ((event.clientY - canvasRect.top - dragOffset.value.y) / canvasRect.height) * 100
+  // 计算相对于交互层的位置百分比
+  const x = ((event.clientX - layerRect.left - dragOffset.value.x) / layerRect.width) * 100
+  const y = ((event.clientY - layerRect.top - dragOffset.value.y) / layerRect.height) * 100
 
-  // 限制在画布范围内
+  // 限制在范围内
   const clampedX = Math.max(0, Math.min(100, x))
   const clampedY = Math.max(0, Math.min(100, y))
 
@@ -418,13 +486,28 @@ const handleImageError = () => {
   ElMessage.error('背景图片加载失败')
 }
 
+// 监听窗口大小变化
+const handleResize = () => {
+  updateInteractionLayerPosition()
+}
+
 onMounted(() => {
   loadScriptPositions()
+  window.addEventListener('resize', handleResize)
+
+  // 尝试初始更新（以防图片已缓存）
+  setTimeout(() => {
+    if (mapImageRef.value?.complete) {
+      console.log('图片已缓存，立即更新位置')
+      updateInteractionLayerPosition()
+    }
+  }, 100)
 })
 
 onUnmounted(() => {
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mouseup', handleMouseUp)
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
@@ -520,8 +603,13 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-/* 网格覆盖层 - 放在图片上面 */
-.map-canvas.show-grid::before {
+/* 交互层 - 与图片对齐，通过 JS 动态设置位置 */
+.interaction-layer {
+  /* position 和其他属性通过 interactionLayerStyle 动态设置 */
+}
+
+/* 网格覆盖层 - 放在交互层上 */
+.interaction-layer.show-grid::before {
   content: '';
   position: absolute;
   top: 0;
