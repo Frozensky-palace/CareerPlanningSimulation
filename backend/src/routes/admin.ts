@@ -737,6 +737,216 @@ router.post('/map-positions', async (req, res) => {
   }
 })
 
+// ============ 公告管理 ============
+
+/**
+ * GET /api/admin/announcements
+ * 获取所有公告
+ */
+router.get('/announcements', async (req, res) => {
+  try {
+    const setting = await SystemSetting.findOne({ where: { key: 'announcements' } })
+    let announcements = []
+
+    if (setting) {
+      try {
+        announcements = JSON.parse(setting.value)
+      } catch {
+        announcements = []
+      }
+    }
+
+    res.json({ announcements })
+  } catch (error) {
+    console.error('Get announcements error:', error)
+    res.status(500).json({ error: '获取公告失败' })
+  }
+})
+
+/**
+ * POST /api/admin/announcements
+ * 创建公告
+ */
+router.post('/announcements', async (req, res) => {
+  try {
+    const { title, content, isPublished = true } = req.body
+
+    if (!title || !content) {
+      return res.status(400).json({ error: '标题和内容不能为空' })
+    }
+
+    const setting = await SystemSetting.findOne({ where: { key: 'announcements' } })
+    let announcements = []
+
+    if (setting) {
+      try {
+        announcements = JSON.parse(setting.value)
+      } catch {
+        announcements = []
+      }
+    }
+
+    const newAnnouncement = {
+      id: Date.now(),
+      title,
+      content,
+      isPublished,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    announcements.unshift(newAnnouncement)
+
+    await SystemSetting.upsert({
+      key: 'announcements',
+      value: JSON.stringify(announcements),
+      description: '公告列表'
+    })
+
+    await logAdminAction(req.admin!.id, 'create_announcement' as any, 'announcement', newAnnouncement.id, `创建公告: ${title}`, req.ip)
+
+    res.json({ announcement: newAnnouncement })
+  } catch (error) {
+    console.error('Create announcement error:', error)
+    res.status(500).json({ error: '创建公告失败' })
+  }
+})
+
+/**
+ * PUT /api/admin/announcements/:id
+ * 更新公告
+ */
+router.put('/announcements/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { title, content, isPublished } = req.body
+
+    const setting = await SystemSetting.findOne({ where: { key: 'announcements' } })
+    if (!setting) {
+      return res.status(404).json({ error: '公告不存在' })
+    }
+
+    let announcements = JSON.parse(setting.value)
+    const index = announcements.findIndex((a: any) => a.id === parseInt(id))
+
+    if (index === -1) {
+      return res.status(404).json({ error: '公告不存在' })
+    }
+
+    announcements[index] = {
+      ...announcements[index],
+      title: title ?? announcements[index].title,
+      content: content ?? announcements[index].content,
+      isPublished: isPublished ?? announcements[index].isPublished,
+      updatedAt: new Date().toISOString()
+    }
+
+    await SystemSetting.upsert({
+      key: 'announcements',
+      value: JSON.stringify(announcements),
+      description: '公告列表'
+    })
+
+    await logAdminAction(req.admin!.id, 'update_announcement' as any, 'announcement', parseInt(id), `更新公告: ${title}`, req.ip)
+
+    res.json({ announcement: announcements[index] })
+  } catch (error) {
+    console.error('Update announcement error:', error)
+    res.status(500).json({ error: '更新公告失败' })
+  }
+})
+
+/**
+ * DELETE /api/admin/announcements/:id
+ * 删除公告
+ */
+router.delete('/announcements/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const setting = await SystemSetting.findOne({ where: { key: 'announcements' } })
+    if (!setting) {
+      return res.status(404).json({ error: '公告不存在' })
+    }
+
+    let announcements = JSON.parse(setting.value)
+    const index = announcements.findIndex((a: any) => a.id === parseInt(id))
+
+    if (index === -1) {
+      return res.status(404).json({ error: '公告不存在' })
+    }
+
+    const title = announcements[index].title
+    announcements.splice(index, 1)
+
+    await SystemSetting.upsert({
+      key: 'announcements',
+      value: JSON.stringify(announcements),
+      description: '公告列表'
+    })
+
+    await logAdminAction(req.admin!.id, 'delete_announcement' as any, 'announcement', parseInt(id), `删除公告: ${title}`, req.ip)
+
+    res.json({ message: '删除成功' })
+  } catch (error) {
+    console.error('Delete announcement error:', error)
+    res.status(500).json({ error: '删除公告失败' })
+  }
+})
+
+// ============ 制作者名单管理 ============
+
+/**
+ * GET /api/admin/credits
+ * 获取制作者名单
+ */
+router.get('/credits', async (req, res) => {
+  try {
+    const setting = await SystemSetting.findOne({ where: { key: 'credits' } })
+    let credits = []
+
+    if (setting) {
+      try {
+        credits = JSON.parse(setting.value)
+      } catch {
+        credits = []
+      }
+    }
+
+    res.json({ credits })
+  } catch (error) {
+    console.error('Get credits error:', error)
+    res.status(500).json({ error: '获取制作者名单失败' })
+  }
+})
+
+/**
+ * PUT /api/admin/credits
+ * 更新制作者名单
+ */
+router.put('/credits', async (req, res) => {
+  try {
+    const { credits } = req.body
+
+    if (!Array.isArray(credits)) {
+      return res.status(400).json({ error: '无效的数据格式' })
+    }
+
+    await SystemSetting.upsert({
+      key: 'credits',
+      value: JSON.stringify(credits),
+      description: '制作者名单'
+    })
+
+    await logAdminAction(req.admin!.id, 'update_credits' as any, 'credits', 0, '更新制作者名单', req.ip)
+
+    res.json({ credits, message: '保存成功' })
+  } catch (error) {
+    console.error('Update credits error:', error)
+    res.status(500).json({ error: '保存失败' })
+  }
+})
+
 // ============ 辅助函数 ============
 
 async function logAdminAction(

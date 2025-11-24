@@ -36,8 +36,8 @@ request.interceptors.response.use(
   (response) => {
     const res = response.data
 
-    // 管理员API直接返回数据，不包含code字段
-    if (response.config.url?.startsWith('/admin')) {
+    // 管理员API和公共API直接返回数据，不包含code字段
+    if (response.config.url?.startsWith('/admin') || response.config.url?.startsWith('/public')) {
       return { data: res }
     }
 

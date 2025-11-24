@@ -150,11 +150,12 @@ const handleSubmit = async () => {
             password: form.password
           })
 
+          // API返回格式: { code: 200, message: '...', data: { token, user } }
           userStore.setToken(res.data.token)
           userStore.setUser(res.data.user)
 
           ElMessage.success('登录成功')
-          router.push('/initial-setup')
+          router.push('/')
         } else {
           await request.post('/auth/register', form)
           ElMessage.success('注册成功，请登录')

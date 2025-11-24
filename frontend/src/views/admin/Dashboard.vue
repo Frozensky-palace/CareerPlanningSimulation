@@ -48,6 +48,14 @@
             <el-icon><User /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
+          <el-menu-item index="announcements">
+            <el-icon><Bell /></el-icon>
+            <span>公告管理</span>
+          </el-menu-item>
+          <el-menu-item index="credits">
+            <el-icon><UserFilled /></el-icon>
+            <span>制作者名单</span>
+          </el-menu-item>
           <el-menu-item index="settings">
             <el-icon><Setting /></el-icon>
             <span>系统设置</span>
@@ -161,6 +169,16 @@
           <SystemSettings />
         </div>
 
+        <!-- 公告管理视图 -->
+        <div v-else-if="activeMenu === 'announcements'" class="announcements-view">
+          <AnnouncementManagement />
+        </div>
+
+        <!-- 制作者名单视图 -->
+        <div v-else-if="activeMenu === 'credits'" class="credits-view">
+          <CreditsManagement />
+        </div>
+
         <!-- 其他视图占位 -->
         <div v-else class="placeholder-view">
           <el-icon :size="60" class="text-gray-300"><WarnTriangleFilled /></el-icon>
@@ -182,10 +200,12 @@ import {
   Location,
   Medal,
   User,
+  UserFilled,
   DocumentCopy,
   WarnTriangleFilled,
   School,
-  SwitchButton
+  SwitchButton,
+  Bell
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
@@ -194,6 +214,8 @@ import MapManagement from '@/components/admin/MapManagement.vue'
 import SystemSettings from '@/components/admin/SystemSettings.vue'
 import BadgeManagement from '@/components/admin/BadgeManagement.vue'
 import UserManagement from '@/components/admin/UserManagement.vue'
+import AnnouncementManagement from '@/components/admin/AnnouncementManagement.vue'
+import CreditsManagement from '@/components/admin/CreditsManagement.vue'
 import request from '@/services/api'
 
 const router = useRouter()

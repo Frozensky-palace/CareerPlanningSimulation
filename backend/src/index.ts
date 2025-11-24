@@ -13,6 +13,7 @@ import scriptRoutes from './routes/scripts.js'
 import badgeRoutes from './routes/badges.js'
 import settlementRoutes from './routes/settlement.js'
 import adminRoutes from './routes/admin.js'
+import publicRoutes from './routes/public.js'
 
 // 导入种子数据
 import { seedDatabase } from './seeds/scripts.js'
@@ -34,6 +35,7 @@ app.use('/api/scripts', scriptRoutes)
 app.use('/api/badges', badgeRoutes)
 app.use('/api/settlement', settlementRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/public', publicRoutes)
 
 // 健康检查
 app.get('/api/health', (req, res) => {
