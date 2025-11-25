@@ -7,7 +7,7 @@
     <div class="main-container">
       <!-- 主标题区域 -->
       <div class="title-section" :class="{ 'fade-in': mounted }">
-        <h1 class="main-title">大学生涯数字孪生平台</h1>
+        <h1 class="main-title">沉浸式大学模拟规划平台</h1>
         <p class="sub-title">模拟你的大学四年，探索不同选择带来的成长轨迹</p>
       </div>
 
@@ -181,7 +181,7 @@
 
       <!-- 底部版权 -->
       <footer class="page-footer">
-        <span>© 2024 易班·大学生涯数字孪生平台</span>
+        <span>© 2025 易班·沉浸式大学模拟规划平台</span>
       </footer>
     </div>
 

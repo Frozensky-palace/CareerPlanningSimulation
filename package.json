@@ -1,7 +1,7 @@
 {
   "name": "career-planning-simulation",
   "version": "1.0.0",
-  "description": "易班·大学生涯数字孪生平台",
+  "description": "易班·沉浸式大学模拟规划平台",
   "scripts": {
     "install:all": "pnpm install --filter backend && pnpm install --filter frontend",
     "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
