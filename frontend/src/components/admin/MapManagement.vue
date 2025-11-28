@@ -134,12 +134,6 @@
           </div>
         </div>
 
-        <!-- 位置说明 -->
-        <div class="position-info-panel">
-          <h4>位置配置说明</h4>
-          <p>场景按钮位置在 <code>src/config/scenes.ts</code> 中配置，修改后需重新构建生效。</p>
-          <p>如需调整位置，请修改对应场景的 <code>position</code> 属性（x, y 为百分比值）。</p>
-        </div>
       </div>
     </div>
   </div>
@@ -241,10 +235,12 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   padding: 24px;
+  overflow: hidden;
 }
 
 .management-header {
   margin-bottom: 24px;
+  flex-shrink: 0;
 }
 
 .page-title {
@@ -419,7 +415,8 @@ onUnmounted(() => {
 
 /* 右侧场景列表 */
 .scene-detail-section {
-  width: 380px;
+  width: 360px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: white;
@@ -427,6 +424,7 @@ onUnmounted(() => {
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  max-height: 100%;
 }
 
 .section-title {
@@ -440,18 +438,40 @@ onUnmounted(() => {
 .scene-list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-height: 0;
+  padding-right: 8px;
+  margin-right: -8px;
+}
+
+.scene-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scene-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.scene-list::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 3px;
+}
+
+.scene-list::-webkit-scrollbar-thumb:hover {
+  background: #909399;
 }
 
 .scene-item {
-  padding: 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .scene-item:hover {
@@ -467,13 +487,13 @@ onUnmounted(() => {
 .scene-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .scene-icon-wrapper {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   background: #f5f7fa;
   display: flex;
   align-items: center;
@@ -483,8 +503,8 @@ onUnmounted(() => {
 }
 
 .scene-icon {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   object-fit: contain;
 }
 
@@ -495,14 +515,14 @@ onUnmounted(() => {
 
 .scene-name {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #303133;
 }
 
 .scene-location {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   color: #909399;
   font-family: monospace;
 }
@@ -514,20 +534,20 @@ onUnmounted(() => {
 
 .event-count {
   display: block;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
 }
 
 .event-label {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   color: #909399;
 }
 
 /* 展开的事件列表 */
 .scene-events {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid #e5e7eb;
 }
 
@@ -535,31 +555,31 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-  font-size: 13px;
+  margin-bottom: 6px;
+  font-size: 12px;
   color: #606266;
 }
 
 .no-events {
-  padding: 16px;
+  padding: 12px;
   text-align: center;
   color: #909399;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .events-list {
-  max-height: 200px;
+  max-height: 150px;
   overflow-y: auto;
 }
 
 .event-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
+  gap: 6px;
+  padding: 6px;
   background: #f9fafb;
-  border-radius: 6px;
-  margin-bottom: 6px;
+  border-radius: 4px;
+  margin-bottom: 4px;
 }
 
 .event-item:last-child {
@@ -567,7 +587,7 @@ onUnmounted(() => {
 }
 
 .event-id {
-  font-size: 12px;
+  font-size: 11px;
   color: #909399;
   font-family: monospace;
   flex-shrink: 0;
@@ -575,44 +595,10 @@ onUnmounted(() => {
 
 .event-title {
   flex: 1;
-  font-size: 13px;
+  font-size: 12px;
   color: #303133;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* 位置说明面板 */
-.position-info-panel {
-  margin-top: 16px;
-  padding: 12px;
-  background: #f5f7fa;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-
-.position-info-panel h4 {
-  margin: 0 0 8px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.position-info-panel p {
-  margin: 0 0 4px 0;
-  font-size: 12px;
-  color: #606266;
-  line-height: 1.5;
-}
-
-.position-info-panel p:last-child {
-  margin-bottom: 0;
-}
-
-.position-info-panel code {
-  background: #e6e8eb;
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-size: 11px;
 }
 </style>

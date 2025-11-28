@@ -15,13 +15,12 @@
         <el-option label="特殊" value="special" />
       </el-select>
       <el-select v-model="filterLocation" placeholder="场景" clearable class="filter-item">
-        <el-option label="校门口" value="gate" />
-        <el-option label="广场" value="plaza" />
-        <el-option label="图书馆" value="library" />
-        <el-option label="宿舍" value="dormitory" />
-        <el-option label="体育馆" value="stadium" />
-        <el-option label="教学楼" value="academic" />
-        <el-option label="校园" value="campus" />
+        <el-option
+          v-for="scene in SCENE_CONFIGS"
+          :key="scene.id"
+          :label="scene.name"
+          :value="scene.location"
+        />
       </el-select>
       <el-input
         v-model="searchKeyword"
@@ -106,13 +105,20 @@
           </el-form-item>
           <el-form-item label="场景" required>
             <el-select v-model="currentScript.location" placeholder="选择场景">
-              <el-option label="校门口" value="gate" />
-              <el-option label="广场" value="plaza" />
-              <el-option label="图书馆" value="library" />
-              <el-option label="宿舍" value="dormitory" />
-              <el-option label="体育馆" value="stadium" />
-              <el-option label="教学楼" value="academic" />
-              <el-option label="校园" value="campus" />
+              <el-option
+                v-for="scene in SCENE_CONFIGS"
+                :key="scene.id"
+                :label="scene.name"
+                :value="scene.location"
+              >
+                <div class="scene-option">
+                  <span
+                    class="scene-color-dot"
+                    :style="{ backgroundColor: scene.color }"
+                  ></span>
+                  <span>{{ scene.name }}</span>
+                </div>
+              </el-option>
             </el-select>
           </el-form-item>
           <el-form-item label="内容" required>
@@ -142,6 +148,7 @@
                 :on-success="handleUploadSuccess"
                 :on-error="handleUploadError"
                 :before-upload="beforeUpload"
+                name="image"
                 accept="image/*"
               >
                 <div class="upload-placeholder">
@@ -328,6 +335,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Delete } from '@element-plus/icons-vue'
 import request from '@/services/api'
 import { useAdminStore } from '@/stores/adminStore'
+import { SCENE_CONFIGS, getSceneLabel } from '@/config/scenes'
 import type { Script } from '@/types'
 
 const adminStore = useAdminStore()
@@ -351,7 +359,7 @@ const emptyScript = () => ({
   title: '',
   content: '',
   type: 'branch' as const,
-  location: 'campus',
+  location: SCENE_CONFIGS[0]?.location || 'library',  // 默认使用第一个场景
   backgroundImage: null as string | null,
   triggerCondition: {
     semester: [] as number[],
@@ -398,16 +406,7 @@ const getTypeTagStyle = (type: string) => {
 }
 
 const getLocationLabel = (location: string) => {
-  const labels: Record<string, string> = {
-    gate: '校门口',
-    plaza: '广场',
-    library: '图书馆',
-    dormitory: '宿舍',
-    stadium: '体育馆',
-    academic: '教学楼',
-    campus: '校园'
-  }
-  return labels[location] || location
+  return getSceneLabel(location)
 }
 
 const loadScripts = async () => {
@@ -788,5 +787,19 @@ onMounted(() => {
 .upload-placeholder .tip {
   font-size: 12px;
   color: #999;
+}
+
+/* 场景选项样式 */
+.scene-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scene-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 </style>

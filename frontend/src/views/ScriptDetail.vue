@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-primary-light flex flex-col">
+  <div class="script-detail-page">
     <!-- 顶部导航栏 -->
-    <header class="bg-white border-b border-gray-100 py-3 px-6">
+    <header class="script-header">
       <div class="max-w-4xl mx-auto flex justify-between items-center">
         <div class="flex items-center gap-3">
           <el-icon :size="20" class="text-secondary-500 cursor-pointer hover:opacity-70" @click="handleBack">
@@ -16,7 +16,7 @@
     </header>
 
     <!-- 主内容区 -->
-    <main class="flex-1 overflow-y-auto">
+    <main class="script-main">
       <div class="max-w-4xl mx-auto px-4 py-8">
         <!-- 加载中 -->
         <div v-if="loading" class="flex justify-center py-20">
@@ -257,6 +257,29 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.script-detail-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f7fa;
+  overflow: hidden;
+}
+
+.script-header {
+  flex-shrink: 0;
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 24px;
+}
+
+.script-main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
 .background-image-wrapper {
   width: 100%;
   max-width: 100%;

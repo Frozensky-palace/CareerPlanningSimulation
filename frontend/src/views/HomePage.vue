@@ -432,7 +432,7 @@ const handleStartSimulation = () => {
     router.push('/login')
     return
   }
-  router.push('/initial-setup')
+  router.push('/guide')
 }
 
 // 继续模拟

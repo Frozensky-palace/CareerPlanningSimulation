@@ -86,7 +86,7 @@
                 <div ref="radarChartRef" class="radar-chart"></div>
               </div>
 
-              <!-- 五维属性数值 -->
+              <!-- 五维属性数值（分段式） -->
               <div class="attributes-list">
                 <div
                   v-for="attr in attributesData"
@@ -97,12 +97,20 @@
                     <span class="attr-label" :style="{ color: attr.color }">{{ attr.label }}</span>
                     <span class="attr-value">{{ attr.value }}</span>
                   </div>
-                  <el-progress
-                    :percentage="attr.value"
-                    :stroke-width="8"
-                    :color="attr.color"
-                    :show-text="false"
-                  />
+                  <div class="attr-bar-track">
+                    <div class="attr-bar-segments">
+                      <div
+                        v-for="i in 10"
+                        :key="i"
+                        class="attr-segment"
+                        :class="{ 'active': attr.value >= i * 10 }"
+                        :style="{
+                          backgroundColor: attr.value >= i * 10 ? attr.color : 'transparent',
+                          borderColor: attr.color
+                        }"
+                      ></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -601,7 +609,7 @@ onMounted(() => {
   height: 320px;
 }
 
-/* 五维属性数值列表 */
+/* 五维属性数值列表（分段式） */
 .attributes-list {
   display: flex;
   flex-direction: column;
@@ -632,6 +640,33 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 700;
   color: #303133;
+}
+
+.attr-bar-track {
+  width: 100%;
+  height: 18px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.attr-bar-segments {
+  display: flex;
+  height: 100%;
+  gap: 3px;
+  padding: 3px;
+}
+
+.attr-segment {
+  flex: 1;
+  border-radius: 2px;
+  border: 1px solid;
+  transition: all 0.3s ease;
+  opacity: 0.25;
+}
+
+.attr-segment.active {
+  opacity: 1;
 }
 
 .stats-grid {
