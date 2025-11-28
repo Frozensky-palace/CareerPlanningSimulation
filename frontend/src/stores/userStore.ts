@@ -10,7 +10,9 @@ export const useUserStore = defineStore('user', {
   getters: {
     isLoggedIn: (state) => !!state.token,
     userId: (state) => state.user?.id || 0,
-    username: (state) => state.user?.username || ''
+    username: (state) => state.user?.username || '',
+    email: (state) => state.user?.email || '',
+    createdAt: (state) => state.user?.createdAt || ''
   },
 
   actions: {
@@ -21,6 +23,18 @@ export const useUserStore = defineStore('user', {
 
     setUser(user: User) {
       this.user = user
+    },
+
+    setUsername(username: string) {
+      if (this.user) {
+        this.user.username = username
+      }
+    },
+
+    setEmail(email: string) {
+      if (this.user) {
+        this.user.email = email
+      }
     },
 
     logout() {

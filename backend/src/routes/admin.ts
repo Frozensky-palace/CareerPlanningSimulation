@@ -224,7 +224,7 @@ router.get('/scripts', async (req, res) => {
  */
 router.post('/scripts', async (req, res) => {
   try {
-    const { title, content, type, location, triggerCondition, options } = req.body
+    const { title, content, type, location, backgroundImage, triggerCondition, options } = req.body
 
     if (!title || !content || !type || !location) {
       return res.status(400).json({ error: '缺少必要字段' })
@@ -235,6 +235,7 @@ router.post('/scripts', async (req, res) => {
       content,
       type,
       location,
+      backgroundImage: backgroundImage || null,
       triggerCondition: triggerCondition || {},
       options: options || []
     })
@@ -255,7 +256,7 @@ router.post('/scripts', async (req, res) => {
 router.put('/scripts/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { title, content, type, location, triggerCondition, options } = req.body
+    const { title, content, type, location, backgroundImage, triggerCondition, options } = req.body
 
     const script = await Script.findByPk(id)
     if (!script) {
@@ -267,6 +268,7 @@ router.put('/scripts/:id', async (req, res) => {
       content,
       type,
       location,
+      backgroundImage: backgroundImage !== undefined ? backgroundImage : script.backgroundImage,
       triggerCondition: triggerCondition || {},
       options: options || []
     })
@@ -943,6 +945,59 @@ router.put('/credits', async (req, res) => {
     res.json({ credits, message: '保存成功' })
   } catch (error) {
     console.error('Update credits error:', error)
+    res.status(500).json({ error: '保存失败' })
+  }
+})
+
+// ============ 地图按钮管理 ============
+
+/**
+ * GET /api/admin/map-buttons
+ * 获取地图按钮配置
+ */
+router.get('/map-buttons', async (req, res) => {
+  try {
+    const setting = await SystemSetting.findOne({ where: { key: 'map_buttons' } })
+    let buttons = []
+
+    if (setting) {
+      try {
+        buttons = JSON.parse(setting.value)
+      } catch {
+        buttons = []
+      }
+    }
+
+    res.json({ buttons })
+  } catch (error) {
+    console.error('Get map buttons error:', error)
+    res.status(500).json({ error: '获取地图按钮配置失败' })
+  }
+})
+
+/**
+ * POST /api/admin/map-buttons
+ * 保存地图按钮配置
+ */
+router.post('/map-buttons', async (req, res) => {
+  try {
+    const { buttons } = req.body
+
+    if (!Array.isArray(buttons)) {
+      return res.status(400).json({ error: '无效的数据格式' })
+    }
+
+    await SystemSetting.upsert({
+      key: 'map_buttons',
+      value: JSON.stringify(buttons),
+      description: '地图按钮配置'
+    })
+
+    await logAdminAction(req.admin!.id, 'update_map_buttons' as any, 'map', 0, '更新地图按钮配置', req.ip)
+
+    res.json({ buttons, message: '保存成功' })
+  } catch (error) {
+    console.error('Save map buttons error:', error)
     res.status(500).json({ error: '保存失败' })
   }
 })

@@ -123,6 +123,35 @@
               placeholder="输入剧本内容描述"
             />
           </el-form-item>
+          <el-form-item label="背景图片">
+            <div class="background-upload">
+              <div v-if="currentScript.backgroundImage" class="preview-wrapper">
+                <img :src="getImageUrl(currentScript.backgroundImage)" class="preview-image" />
+                <div class="preview-actions">
+                  <el-button type="danger" size="small" @click="handleRemoveBackground">
+                    删除
+                  </el-button>
+                </div>
+              </div>
+              <el-upload
+                v-else
+                class="background-uploader"
+                :action="uploadUrl"
+                :headers="uploadHeaders"
+                :show-file-list="false"
+                :on-success="handleUploadSuccess"
+                :on-error="handleUploadError"
+                :before-upload="beforeUpload"
+                accept="image/*"
+              >
+                <div class="upload-placeholder">
+                  <el-icon :size="32"><Plus /></el-icon>
+                  <span>上传背景图片</span>
+                  <span class="tip">支持 JPG、PNG、GIF，最大 5MB</span>
+                </div>
+              </el-upload>
+            </div>
+          </el-form-item>
         </div>
 
         <!-- 触发条件 -->
@@ -298,8 +327,10 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Delete } from '@element-plus/icons-vue'
 import request from '@/services/api'
+import { useAdminStore } from '@/stores/adminStore'
 import type { Script } from '@/types'
 
+const adminStore = useAdminStore()
 const loading = ref(false)
 const saving = ref(false)
 const allScripts = ref<Script[]>([])
@@ -309,12 +340,19 @@ const searchKeyword = ref('')
 const showEditorDialog = ref(false)
 const isEditing = ref(false)
 
+// 上传相关
+const uploadUrl = computed(() => `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/upload/script-background`)
+const uploadHeaders = computed(() => ({
+  Authorization: `Bearer ${adminStore.token}`
+}))
+
 const emptyScript = () => ({
   id: 0,
   title: '',
   content: '',
   type: 'branch' as const,
   location: 'campus',
+  backgroundImage: null as string | null,
   triggerCondition: {
     semester: [] as number[],
     week: [] as number[],
@@ -524,6 +562,42 @@ const handleSaveScript = async () => {
   }
 }
 
+// 上传相关方法
+const getImageUrl = (url: string) => {
+  if (url.startsWith('http')) return url
+  return `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${url}`
+}
+
+const beforeUpload = (file: File) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt5M = file.size / 1024 / 1024 < 5
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件！')
+    return false
+  }
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过 5MB！')
+    return false
+  }
+  return true
+}
+
+const handleUploadSuccess = (response: any) => {
+  if (response.url) {
+    currentScript.value.backgroundImage = response.url
+    ElMessage.success('上传成功')
+  }
+}
+
+const handleUploadError = () => {
+  ElMessage.error('上传失败，请重试')
+}
+
+const handleRemoveBackground = () => {
+  currentScript.value.backgroundImage = null
+}
+
 onMounted(() => {
   loadScripts()
 })
@@ -661,5 +735,58 @@ onMounted(() => {
 
 .w-full {
   width: 100%;
+}
+
+/* 背景图片上传 */
+.background-upload {
+  width: 100%;
+}
+
+.preview-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+}
+
+.preview-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.preview-actions {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.background-uploader {
+  width: 100%;
+}
+
+.upload-placeholder {
+  width: 100%;
+  max-width: 400px;
+  height: 200px;
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  background: #fafafa;
+}
+
+.upload-placeholder:hover {
+  border-color: #409EFF;
+}
+
+.upload-placeholder .tip {
+  font-size: 12px;
+  color: #999;
 }
 </style>

@@ -41,6 +41,9 @@ class Save extends Model<SaveAttributes, SaveCreationAttributes> implements Save
   declare unlockedBadges: number[]
   declare readonly createdAt: Date
   declare readonly updatedAt: Date
+
+  // 关联
+  declare user?: User
 }
 
 Save.init(

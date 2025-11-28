@@ -18,18 +18,39 @@
           </div>
 
           <div class="info-details">
-            <div class="detail-item">
-              <label>用户名</label>
-              <span>{{ userStore.username }}</span>
-            </div>
-            <div class="detail-item">
-              <label>邮箱</label>
-              <span>{{ userStore.email || '未设置' }}</span>
-            </div>
-            <div class="detail-item">
-              <label>注册时间</label>
-              <span>{{ formatDate(userStore.createdAt) }}</span>
-            </div>
+            <template v-if="!isEditingInfo">
+              <div class="detail-item">
+                <label>用户名</label>
+                <span>{{ userStore.username }}</span>
+              </div>
+              <div class="detail-item">
+                <label>邮箱</label>
+                <span>{{ userStore.email || '未设置' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>注册时间</label>
+                <span>{{ formatDate(userStore.createdAt) }}</span>
+              </div>
+              <el-button type="primary" @click="startEditInfo">编辑资料</el-button>
+            </template>
+
+            <template v-else>
+              <el-form :model="editForm" label-position="top">
+                <el-form-item label="用户名">
+                  <el-input v-model="editForm.username" placeholder="请输入用户名" />
+                </el-form-item>
+                <el-form-item label="邮箱">
+                  <el-input v-model="editForm.email" placeholder="请输入邮箱" />
+                </el-form-item>
+                <el-form-item label="新密码（留空则不修改）">
+                  <el-input v-model="editForm.password" type="password" placeholder="请输入新密码" show-password />
+                </el-form-item>
+              </el-form>
+              <div class="edit-actions">
+                <el-button @click="cancelEditInfo">取消</el-button>
+                <el-button type="primary" @click="saveUserInfo" :loading="savingInfo">保存</el-button>
+              </div>
+            </template>
           </div>
         </div>
       </el-tab-pane>
@@ -60,17 +81,28 @@
                 </div>
               </div>
 
-              <!-- 五维属性 -->
-              <div class="attributes-chart">
-                <div class="attr-row" v-for="attr in attributesData" :key="attr.key">
-                  <span class="attr-label" :style="{ color: attr.color }">{{ attr.label }}</span>
-                  <div class="attr-bar-container">
-                    <div
-                      class="attr-bar"
-                      :style="{ width: attr.value + '%', backgroundColor: attr.color }"
-                    ></div>
+              <!-- 五维属性雷达图 -->
+              <div class="radar-chart-container">
+                <div ref="radarChartRef" class="radar-chart"></div>
+              </div>
+
+              <!-- 五维属性数值 -->
+              <div class="attributes-list">
+                <div
+                  v-for="attr in attributesData"
+                  :key="attr.key"
+                  class="attribute-item"
+                >
+                  <div class="attr-header">
+                    <span class="attr-label" :style="{ color: attr.color }">{{ attr.label }}</span>
+                    <span class="attr-value">{{ attr.value }}</span>
                   </div>
-                  <span class="attr-value" :style="{ color: attr.color }">{{ attr.value }}</span>
+                  <el-progress
+                    :percentage="attr.value"
+                    :stroke-width="8"
+                    :color="attr.color"
+                    :show-text="false"
+                  />
                 </div>
               </div>
             </div>
@@ -142,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import {
   User,
   TrendCharts,
@@ -160,7 +192,9 @@ import {
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/userStore'
 import { useGameStore } from '@/stores/gameStore'
+import { ElMessage } from 'element-plus'
 import request from '@/services/api'
+import * as echarts from 'echarts'
 
 const visible = defineModel<boolean>({ required: true })
 
@@ -171,6 +205,19 @@ const activeTab = ref('info')
 const allBadges = ref<any[]>([])
 const unlockedBadges = ref<number[]>([])
 const totalSaves = ref(0)
+
+// 个人信息编辑
+const isEditingInfo = ref(false)
+const savingInfo = ref(false)
+const editForm = ref({
+  username: '',
+  email: '',
+  password: ''
+})
+
+// 雷达图
+const radarChartRef = ref<HTMLElement>()
+let radarChart: echarts.ECharts | null = null
 
 const currentSave = computed(() => gameStore.currentSave)
 
@@ -202,6 +249,11 @@ const badgeProgressColor = computed(() => {
 })
 
 const isBadgeUnlocked = (badgeId: number) => {
+  // 优先使用 badge 对象的 unlocked 属性（后端返回的），作为备选使用本地列表
+  const badge = allBadges.value.find((b: any) => b.id === badgeId)
+  if (badge && badge.unlocked !== undefined) {
+    return badge.unlocked
+  }
   return unlockedBadges.value.includes(badgeId)
 }
 
@@ -225,14 +277,134 @@ const formatDate = (date?: string) => {
   return new Date(date).toLocaleDateString('zh-CN')
 }
 
+// 个人信息编辑功能
+const startEditInfo = () => {
+  editForm.value = {
+    username: userStore.username || '',
+    email: userStore.email || '',
+    password: ''
+  }
+  isEditingInfo.value = true
+}
+
+const cancelEditInfo = () => {
+  isEditingInfo.value = false
+}
+
+const saveUserInfo = async () => {
+  try {
+    savingInfo.value = true
+    const updateData: any = {}
+    if (editForm.value.username) updateData.username = editForm.value.username
+    if (editForm.value.email) updateData.email = editForm.value.email
+    if (editForm.value.password) updateData.password = editForm.value.password
+
+    await request.put('/auth/profile', updateData)
+
+    // 更新本地store
+    if (editForm.value.username) userStore.setUsername(editForm.value.username)
+    if (editForm.value.email) userStore.setEmail(editForm.value.email)
+
+    ElMessage.success('个人信息更新成功')
+    isEditingInfo.value = false
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '更新失败')
+  } finally {
+    savingInfo.value = false
+  }
+}
+
+// 初始化雷达图
+const initRadarChart = () => {
+  if (!radarChartRef.value) return
+
+  if (radarChart) {
+    radarChart.dispose()
+  }
+
+  radarChart = echarts.init(radarChartRef.value)
+
+  const attrs = currentSave.value?.attributes
+  if (!attrs) return
+
+  const option = {
+    tooltip: {
+      trigger: 'item'
+    },
+    radar: {
+      indicator: [
+        { name: '德育', max: 100 },
+        { name: '智育', max: 100 },
+        { name: '体育', max: 100 },
+        { name: '美育', max: 100 },
+        { name: '劳育', max: 100 }
+      ],
+      center: ['50%', '50%'],
+      radius: '70%',
+      shape: 'polygon',
+      splitNumber: 5,
+      axisName: {
+        color: '#303133',
+        fontSize: 14,
+        fontWeight: 600
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#e5e7eb'
+        }
+      },
+      splitArea: {
+        areaStyle: {
+          color: ['#f9fafb', '#f3f4f6', '#e5e7eb', '#d1d5db', '#9ca3af']
+        }
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#d1d5db'
+        }
+      }
+    },
+    series: [
+      {
+        type: 'radar',
+        data: [
+          {
+            value: [attrs.de, attrs.zhi, attrs.ti, attrs.mei, attrs.lao],
+            name: '五维属性',
+            areaStyle: {
+              color: 'rgba(64, 158, 255, 0.3)'
+            },
+            lineStyle: {
+              color: '#409EFF',
+              width: 2
+            },
+            itemStyle: {
+              color: '#409EFF'
+            }
+          }
+        ]
+      }
+    ]
+  }
+
+  radarChart.setOption(option)
+}
+
 const loadBadges = async () => {
   try {
     const saveId = currentSave.value?.id
+    console.log('[Badge] Loading badges for saveId:', saveId)
     if (!saveId) return
 
     const res = await request.get('/badges', { params: { saveId } })
+    console.log('[Badge] Response:', res.data)
     allBadges.value = res.data?.badges || []
-    unlockedBadges.value = currentSave.value?.unlockedBadges || []
+
+    // 从返回的badges中提取已解锁的勋章ID
+    unlockedBadges.value = allBadges.value
+      .filter((badge: any) => badge.unlocked)
+      .map((badge: any) => badge.id)
+    console.log('[Badge] Unlocked badges:', unlockedBadges.value)
   } catch (error) {
     console.error('Load badges error:', error)
   }
@@ -246,6 +418,41 @@ const loadSavesCount = async () => {
     console.error('Load saves error:', error)
   }
 }
+
+// 监听tab切换到游戏数据时初始化雷达图
+watch([activeTab, visible], ([newTab, isVisible]) => {
+  if (newTab === 'stats' && isVisible) {
+    nextTick(() => {
+      setTimeout(() => {
+        initRadarChart()
+      }, 100)
+    })
+  }
+})
+
+// 监听属性变化重新绘制
+watch(() => currentSave.value?.attributes, () => {
+  if (activeTab.value === 'stats' && visible.value) {
+    nextTick(() => {
+      initRadarChart()
+    })
+  }
+}, { deep: true })
+
+// 监听勋章变化，重新加载勋章列表
+watch(() => currentSave.value?.unlockedBadges, () => {
+  if (visible.value) {
+    loadBadges()
+  }
+}, { deep: true })
+
+// 监听对话框打开，重新加载勋章
+watch(visible, (isVisible) => {
+  if (isVisible) {
+    loadBadges()
+    loadSavesCount()
+  }
+})
 
 onMounted(() => {
   loadBadges()
@@ -317,6 +524,13 @@ onMounted(() => {
   font-weight: 600;
 }
 
+.edit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
 /* 游戏数据 */
 .stats-section {
   display: flex;
@@ -374,43 +588,50 @@ onMounted(() => {
   color: #409EFF;
 }
 
-.attributes-chart {
+/* 雷达图 */
+.radar-chart-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.radar-chart {
+  width: 400px;
+  height: 320px;
+}
+
+/* 五维属性数值列表 */
+.attributes-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
 }
 
-.attr-row {
+.attribute-item {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attr-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
 }
 
 .attr-label {
-  width: 40px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
-.attr-bar-container {
-  flex: 1;
-  height: 20px;
-  background: #fff;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.attr-bar {
-  height: 100%;
-  border-radius: 10px;
-  transition: width 0.3s;
-}
-
 .attr-value {
-  width: 40px;
-  text-align: right;
   font-size: 14px;
   font-weight: 700;
+  color: #303133;
 }
 
 .stats-grid {

@@ -120,9 +120,9 @@
               <div ref="typeChartRef" class="chart-container"></div>
             </div>
 
-            <!-- 场景分布 -->
+            <!-- 场景事件占比 -->
             <div class="data-card">
-              <h3 class="card-title">场景分布</h3>
+              <h3 class="card-title">场景事件占比</h3>
               <div ref="locationChartRef" class="chart-container"></div>
             </div>
 
@@ -217,6 +217,7 @@ import UserManagement from '@/components/admin/UserManagement.vue'
 import AnnouncementManagement from '@/components/admin/AnnouncementManagement.vue'
 import CreditsManagement from '@/components/admin/CreditsManagement.vue'
 import request from '@/services/api'
+import { getSceneLabel, SCENE_CONFIGS } from '@/config/scenes'
 
 const router = useRouter()
 const activeMenu = ref('dashboard')
@@ -258,16 +259,7 @@ const handleMenuSelect = (index: string) => {
 }
 
 const getLocationLabel = (location: string) => {
-  const labels: Record<string, string> = {
-    gate: '校门口',
-    plaza: '广场',
-    library: '图书馆',
-    dormitory: '宿舍',
-    stadium: '体育馆',
-    academic: '教学楼',
-    campus: '校园'
-  }
-  return labels[location] || location
+  return getSceneLabel(location)
 }
 
 const formatDateTime = (date: string) => {
@@ -338,32 +330,34 @@ const initTypeChart = () => {
   window.addEventListener('resize', () => chart.resize())
 }
 
-// 初始化场景分布图表
+// 初始化场景分布图表（场景事件占比饼图）
 const initLocationChart = () => {
   if (!locationChartRef.value) return
 
   const chart = echarts.init(locationChartRef.value)
 
-  // 使用蓝色系但色彩跨度更大的配色方案
-  const colors = [
-    '#0057D9',  // 深蓝
-    '#1A8FFF',  // 标准蓝
-    '#4BA3FF',  // 中蓝
-    '#7BBFFF',  // 浅蓝
-    '#A8D8FF',  // 很浅蓝
-    '#D4EDFF',  // 极浅蓝
-    '#0080FF'   // 鲜蓝
-  ]
-  const data = Object.entries(stats.value.scriptsByLocation).map(([location, count], index) => ({
+  // 使用场景配置中的颜色
+  const getSceneColor = (location: string) => {
+    const scene = SCENE_CONFIGS.find(s => s.location === location || s.id === location)
+    return scene?.color || '#909399'
+  }
+
+  // 计算总事件数（用于tooltip显示）
+  const totalEvents = Object.values(stats.value.scriptsByLocation).reduce((sum, count) => sum + (count as number), 0)
+
+  const data = Object.entries(stats.value.scriptsByLocation).map(([location, count]) => ({
     value: count,
     name: getLocationLabel(location),
-    itemStyle: { color: colors[index % colors.length] }
+    itemStyle: { color: getSceneColor(location) }
   }))
 
   const option: EChartsOption = {
     tooltip: {
       trigger: 'item',
-      formatter: '{b}: {c} ({d}%)'
+      formatter: (params: any) => {
+        const percent = totalEvents > 0 ? ((params.value / totalEvents) * 100).toFixed(1) : '0'
+        return `${params.name}: ${params.value} (${percent}%)`
+      }
     },
     legend: {
       orient: 'horizontal',

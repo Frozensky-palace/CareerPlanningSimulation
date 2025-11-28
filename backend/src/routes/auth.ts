@@ -146,4 +146,64 @@ router.get('/profile', authMiddleware, async (req: AuthRequest, res) => {
   }
 })
 
+// 更新用户信息
+router.put('/profile', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const user = await User.findByPk(req.userId)
+    if (!user) {
+      return res.status(404).json({
+        code: 404,
+        message: '用户不存在'
+      })
+    }
+
+    const { username, email, password } = req.body
+
+    // 如果更新用户名，检查是否已被使用
+    if (username && username !== user.username) {
+      const existingUser = await User.findOne({ where: { username } })
+      if (existingUser) {
+        return res.status(400).json({
+          code: 400,
+          message: '用户名已被使用'
+        })
+      }
+      user.username = username
+    }
+
+    // 如果更新邮箱，检查是否已被使用
+    if (email && email !== user.email) {
+      const existingEmail = await User.findOne({ where: { email } })
+      if (existingEmail) {
+        return res.status(400).json({
+          code: 400,
+          message: '邮箱已被注册'
+        })
+      }
+      user.email = email
+    }
+
+    // 如果更新密码
+    if (password) {
+      user.password = password
+    }
+
+    await user.save()
+
+    res.json({
+      code: 200,
+      message: '更新成功',
+      data: {
+        user: user.toSafeObject()
+      }
+    })
+  } catch (error: any) {
+    console.error('Update profile error:', error)
+    res.status(500).json({
+      code: 500,
+      message: error.message || '更新失败'
+    })
+  }
+})
+
 export default router

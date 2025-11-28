@@ -1,6 +1,8 @@
 import express from 'express'
+import { QueryTypes } from 'sequelize'
 import { authMiddleware, AuthRequest } from '../middleware/auth.js'
 import { Badge, Save } from '../models/index.js'
+import { sequelize } from '../config/database.js'
 
 const router = express.Router()
 
@@ -65,6 +67,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
 
       if (save) {
         const unlockedIds = save.unlockedBadges || []
+        console.log(`[Badge GET] Save ${saveId} unlockedBadges:`, unlockedIds)
         badgesWithStatus = badges.map(badge => ({
           ...badge.toJSON(),
           unlocked: unlockedIds.includes(badge.id)
@@ -111,8 +114,13 @@ router.post('/check/:saveId', authMiddleware, async (req: AuthRequest, res) => {
       where: { isActive: true }
     })
 
-    const unlockedIds = save.unlockedBadges || []
+    console.log(`[Badge] Initial save.unlockedBadges:`, save.unlockedBadges, `type:`, typeof save.unlockedBadges, `isArray:`, Array.isArray(save.unlockedBadges))
+
+    // 确保是数组并创建副本
+    const unlockedIds = Array.isArray(save.unlockedBadges) ? [...save.unlockedBadges] : []
     const newlyUnlocked: any[] = []
+
+    console.log(`[Badge] unlockedIds after processing:`, unlockedIds)
 
     // 检查每个未解锁的勋章
     for (const badge of allBadges) {
@@ -126,9 +134,25 @@ router.post('/check/:saveId', authMiddleware, async (req: AuthRequest, res) => {
 
     // 如果有新解锁的勋章，更新存档
     if (newlyUnlocked.length > 0) {
-      save.unlockedBadges = unlockedIds
-      await save.save()
+      console.log(`[Badge] Before save - unlockedBadges:`, save.unlockedBadges)
+      console.log(`[Badge] New unlockedIds to save:`, unlockedIds)
+
+      // 使用原始 SQL 更新 JSON 字段，确保数据正确保存
+      await sequelize.query(
+        `UPDATE saves SET unlockedBadges = ? WHERE id = ?`,
+        {
+          replacements: [JSON.stringify(unlockedIds), save.id],
+          type: QueryTypes.UPDATE
+        }
+      )
+
+      // 重新获取保存后的数据验证
+      const updatedSave = await Save.findByPk(save.id)
+      console.log(`[Badge] After save - unlockedBadges:`, updatedSave?.unlockedBadges)
+      console.log(`[Badge] Unlocked ${newlyUnlocked.length} new badges for save ${save.id}:`, newlyUnlocked.map(b => b.id))
     }
+
+    console.log(`[Badge] Check result - Total unlocked: ${unlockedIds.length}, Newly unlocked: ${newlyUnlocked.length}`)
 
     res.json({
       code: 200,

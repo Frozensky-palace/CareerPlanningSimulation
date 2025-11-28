@@ -34,6 +34,7 @@ interface ScriptAttributes {
   content: string
   type: ScriptType
   location: string          // 触发地点
+  backgroundImage: string | null  // 剧本背景图片URL
   options: ScriptOption[]
   triggerCondition: TriggerCondition
   isActive: boolean
@@ -41,7 +42,7 @@ interface ScriptAttributes {
   updatedAt?: Date
 }
 
-interface ScriptCreationAttributes extends Optional<ScriptAttributes, 'id' | 'isActive'> {}
+interface ScriptCreationAttributes extends Optional<ScriptAttributes, 'id' | 'isActive' | 'backgroundImage'> {}
 
 class Script extends Model<ScriptAttributes, ScriptCreationAttributes> implements ScriptAttributes {
   declare id: number
@@ -49,6 +50,7 @@ class Script extends Model<ScriptAttributes, ScriptCreationAttributes> implement
   declare content: string
   declare type: ScriptType
   declare location: string
+  declare backgroundImage: string | null
   declare options: ScriptOption[]
   declare triggerCondition: TriggerCondition
   declare isActive: boolean
@@ -80,6 +82,11 @@ Script.init(
       type: DataTypes.STRING(50),
       allowNull: false,
       defaultValue: 'campus'
+    },
+    backgroundImage: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      defaultValue: null
     },
     options: {
       type: DataTypes.JSON,

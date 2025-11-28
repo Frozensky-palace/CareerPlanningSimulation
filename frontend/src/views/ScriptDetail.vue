@@ -27,6 +27,11 @@
 
         <!-- 剧本内容 -->
         <div v-else-if="script" class="animate-fade-in">
+          <!-- 背景图片 -->
+          <div v-if="script.backgroundImage" class="background-image-wrapper mb-6">
+            <img :src="getImageUrl(script.backgroundImage)" alt="剧本背景" class="background-image" />
+          </div>
+
           <!-- 剧本内容卡片 -->
           <div class="bg-white rounded-2xl shadow-medium p-6 md:p-8 mb-6">
             <!-- 场景信息 -->
@@ -93,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import { ArrowLeft, ArrowRight, Loading, Location } from '@element-plus/icons-vue'
@@ -163,6 +168,15 @@ const checkBadges = async () => {
     const res = await request.post(`/badges/check/${saveId}`)
     const newlyUnlocked = res.data?.newlyUnlocked || []
 
+    // 如果有新解锁的勋章，更新本地存档数据
+    if (newlyUnlocked.length > 0) {
+      // 重新获取存档数据以获取最新的 unlockedBadges
+      const saveRes = await request.get(`/saves/${saveId}`)
+      if (saveRes.data?.save) {
+        gameStore.setCurrentSave(saveRes.data.save)
+      }
+    }
+
     // 显示新解锁勋章通知
     for (const badge of newlyUnlocked) {
       ElNotification({
@@ -201,6 +215,9 @@ const handleContinue = async () => {
     // 检查是否需要触发结算
     if (res.data?.needSettlement) {
       router.push('/settlement')
+    } else if (res.data?.nextScriptId) {
+      // 如果有下一个剧本（事件链），跳转到下一个剧本
+      router.replace(`/script/${res.data.nextScriptId}`)
     } else {
       router.push('/campus-map')
     }
@@ -216,12 +233,46 @@ const handleBack = () => {
   router.push('/campus-map')
 }
 
+const getImageUrl = (url: string) => {
+  if (url.startsWith('http')) return url
+  return `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${url}`
+}
+
+// 监听路由参数变化，用于事件链跳转时重新加载剧本
+watch(
+  () => route.params.id,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) {
+      // 重置状态
+      selectedOption.value = null
+      script.value = null
+      loadScript()
+    }
+  }
+)
+
 onMounted(() => {
   loadScript()
 })
 </script>
 
 <style scoped>
+.background-image-wrapper {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.background-image {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: cover;
+  display: block;
+}
+
 .option-card {
   position: relative;
 }

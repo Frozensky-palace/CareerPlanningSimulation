@@ -70,6 +70,7 @@ export interface Script {
   content: string
   type: 'main' | 'branch' | 'special'
   location: string
+  backgroundImage?: string | null  // 剧本背景图片URL
   options: ScriptOption[]
   triggerCondition: TriggerCondition
   isActive: boolean

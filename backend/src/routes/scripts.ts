@@ -1,7 +1,8 @@
 import express from 'express'
+import { Op, QueryTypes } from 'sequelize'
 import { authMiddleware, AuthRequest } from '../middleware/auth.js'
 import { Script, Save, SystemSetting } from '../models/index.js'
-import { Op } from 'sequelize'
+import { sequelize } from '../config/database.js'
 
 const router = express.Router()
 
@@ -149,6 +150,105 @@ router.get('/map-positions', async (req, res) => {
   }
 })
 
+// 获取事件链信息
+router.get('/event-chains', async (req, res) => {
+  try {
+    const scripts = await Script.findAll({
+      where: { isActive: true },
+      order: [['id', 'ASC']]
+    })
+
+    // 构建事件链映射
+    const chains: { [chainId: string]: number[] } = {}
+    const scriptToChain: { [scriptId: number]: string } = {}
+
+    // 首先找到所有有前置要求的剧本
+    const scriptsWithRequirements = scripts.filter(s => {
+      const condition = s.triggerCondition as any
+      return condition?.requiredScripts && condition.requiredScripts.length > 0
+    })
+
+    // 为每个剧本找到它的链条
+    const findChain = (scriptId: number, visited: Set<number> = new Set()): number[] => {
+      if (visited.has(scriptId)) return []
+      visited.add(scriptId)
+
+      const script = scripts.find(s => s.id === scriptId)
+      if (!script) return []
+
+      const condition = script.triggerCondition as any
+      const requiredScripts = condition?.requiredScripts || []
+
+      if (requiredScripts.length === 0) {
+        // 这是链条的起点
+        return [scriptId]
+      } else {
+        // 递归找到前置剧本的链条
+        const prevScript = requiredScripts[0]
+        const prevChain = findChain(prevScript, visited)
+        return [...prevChain, scriptId]
+      }
+    }
+
+    // 构建所有链条 - 只保留最长的链条
+    const allChains: { [chainId: string]: number[] } = {}
+    const processedScripts = new Set<number>()
+    let chainCounter = 1
+
+    // 首先找到所有链条的终点（没有其他剧本依赖它们的剧本）
+    const chainEnds: number[] = []
+    for (const script of scripts) {
+      const hasDependent = scripts.some(s => {
+        const condition = s.triggerCondition as any
+        return condition?.requiredScripts && condition.requiredScripts.includes(script.id)
+      })
+
+      const condition = script.triggerCondition as any
+      const hasRequirement = condition?.requiredScripts && condition.requiredScripts.length > 0
+
+      if (hasRequirement && !hasDependent) {
+        chainEnds.push(script.id)
+      }
+    }
+
+    // 从每个终点构建完整的链条
+    for (const endScriptId of chainEnds) {
+      const chain = findChain(endScriptId)
+
+      if (chain.length > 1) {
+        // 检查这个链条的剧本是否已经被处理过
+        const alreadyProcessed = chain.some(sid => processedScripts.has(sid))
+
+        if (!alreadyProcessed) {
+          const chainId = `chain_${chainCounter++}`
+          allChains[chainId] = chain
+
+          // 标记这些剧本属于这个链条
+          chain.forEach(sid => {
+            scriptToChain[sid] = chainId
+            processedScripts.add(sid)
+          })
+        }
+      }
+    }
+
+    res.json({
+      code: 200,
+      message: '获取成功',
+      data: {
+        chains: allChains,
+        scriptToChain
+      }
+    })
+  } catch (error: any) {
+    console.error('Get event chains error:', error)
+    res.status(500).json({
+      code: 500,
+      message: error.message || '获取事件链信息失败'
+    })
+  }
+})
+
 // 获取剧本详情
 router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
@@ -232,17 +332,28 @@ router.post('/:id/execute', authMiddleware, async (req: AuthRequest, res) => {
     const newRemainingEvents = Math.max(0, save.remainingEvents - 1)
     const needSettlement = newRemainingEvents === 0
 
-    // 保存更新
-    save.attributes = newAttributes
-    save.completedScripts = completedScripts
-    save.remainingEvents = newRemainingEvents
-    await save.save()
+    // 使用原始 SQL 更新 JSON 字段，确保数据正确保存到 MySQL
+    await sequelize.query(
+      `UPDATE saves SET attributes = ?, completedScripts = ?, remainingEvents = ? WHERE id = ?`,
+      {
+        replacements: [
+          JSON.stringify(newAttributes),
+          JSON.stringify(completedScripts),
+          newRemainingEvents,
+          save.id
+        ],
+        type: QueryTypes.UPDATE
+      }
+    )
+
+    // 重新获取更新后的存档
+    const updatedSave = await Save.findByPk(save.id)
 
     res.json({
       code: 200,
       message: '剧本执行成功',
       data: {
-        save,
+        save: updatedSave,
         attributeChanges: changes,
         nextScriptId: selectedOption.nextScriptId || null,
         needSettlement  // 告诉前端是否需要触发结算

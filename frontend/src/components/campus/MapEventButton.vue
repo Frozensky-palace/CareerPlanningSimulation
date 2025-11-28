@@ -61,6 +61,15 @@
           <Check />
         </el-icon>
       </div>
+
+      <!-- 事件链进度指示器 -->
+      <div
+        v-if="chainId && eventChain && eventChain.length > 1 && !isCompleted"
+        class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs bg-white px-2 py-0.5 rounded-full border border-gray-300 shadow-sm whitespace-nowrap"
+      >
+        <span class="text-blue-500 font-semibold">{{ chainProgress }}</span>
+        <span class="text-gray-400">/{{ eventChain.length }}</span>
+      </div>
     </div>
 
     <!-- 标题提示 -->
@@ -96,6 +105,9 @@ interface Props {
     x: number  // 百分比位置 0-100
     y: number  // 百分比位置 0-100
   }
+  chainId?: string
+  eventChain?: number[]
+  allScripts?: Script[]
 }
 
 const props = defineProps<Props>()
@@ -104,7 +116,31 @@ const emit = defineEmits<{
 }>()
 
 const isLocked = computed(() => props.script.status === 'locked')
-const isCompleted = computed(() => props.script.status === 'completed')
+
+// 如果是事件链，只有当整个链条完成时才显示完成标记
+const isCompleted = computed(() => {
+  if (props.chainId && props.eventChain && props.allScripts) {
+    // 检查链条中所有剧本是否都已完成
+    const allChainCompleted = props.eventChain.every(scriptId => {
+      const script = props.allScripts!.find(s => s.id === scriptId)
+      return script?.status === 'completed'
+    })
+    return allChainCompleted
+  }
+  // 不是事件链，正常判断
+  return props.script.status === 'completed'
+})
+
+// 事件链进度：已完成的剧本数量
+const chainProgress = computed(() => {
+  if (!props.chainId || !props.eventChain || !props.allScripts) {
+    return 0
+  }
+  return props.eventChain.filter(scriptId => {
+    const script = props.allScripts!.find(s => s.id === scriptId)
+    return script?.status === 'completed'
+  }).length
+})
 
 const handleClick = () => {
   if (!isLocked.value && !isCompleted.value) {

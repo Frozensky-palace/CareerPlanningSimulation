@@ -1,0 +1,1 @@
+{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbklkIjoxLCJ0eXBlIjoiYWRtaW4iLCJpYXQiOjE3NjQwNzkzMzcsImV4cCI6MTc2NDE2NTczN30.3TqTeG8SVE9FWmXnCi1tuQYC57jIU3ITx2Z2EBCcOn8","admin":{"id":1,"username":"admin","role":"super_admin","email":"admin@example.com","lastLoginAt":"2025-11-25T14:02:17.443Z","isActive":true,"createdAt":"2025-11-22T17:10:16.000Z"}}
