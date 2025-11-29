@@ -44,6 +44,12 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/workshop',
     name: 'Workshop',
+    component: () => import('@/views/WorkshopList.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/workshop/:id',
+    name: 'WorkshopEditor',
     component: () => import('@/views/WorkshopEditor.vue'),
     meta: { requiresAuth: true }
   },

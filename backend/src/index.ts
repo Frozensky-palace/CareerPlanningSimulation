@@ -17,6 +17,7 @@ import settlementRoutes from './routes/settlement.js'
 import adminRoutes from './routes/admin.js'
 import publicRoutes from './routes/public.js'
 import uploadRoutes from './routes/upload.js'
+import workshopRoutes from './routes/workshop.js'
 
 // 导入种子数据
 import { seedDatabase } from './seeds/scripts.js'
@@ -47,6 +48,7 @@ app.use('/api/settlement', settlementRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/public', publicRoutes)
 app.use('/api/upload', uploadRoutes)
+app.use('/api/workshop', workshopRoutes)
 
 // 健康检查
 app.get('/api/health', (req, res) => {

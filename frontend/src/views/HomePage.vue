@@ -118,10 +118,9 @@
             <span>后台管理</span>
           </button>
 
-          <button class="menu-btn" @click="handleWorkshop" disabled>
+          <button class="menu-btn" @click="handleWorkshop" :disabled="!userStore.isLoggedIn">
             <el-icon :size="28"><Box /></el-icon>
             <span>创意工坊</span>
-            <span class="badge-soon">即将推出</span>
           </button>
 
           <button class="menu-btn" @click="showCredits">
@@ -471,7 +470,11 @@ const handleAdmin = () => {
 
 // 创意工坊
 const handleWorkshop = () => {
-  ElMessage.info('创意工坊即将推出，敬请期待！')
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  router.push('/workshop')
 }
 
 // 退出
