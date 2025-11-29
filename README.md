@@ -59,20 +59,19 @@ CareerPlanningSimulation/
 ### 2. 数据库初始化
 
 ```bash
-# 登录 MySQL
-mysql -u root -p
+# 方式一：执行初始化脚本
+mysql -u root -p < database/init.sql
 
-# 执行初始化脚本
-source database/init.sql
+# 方式二：直接创建数据库
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS career_planning CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 ```
+
+> **注意**：只需创建数据库即可，表结构和种子数据会在后端启动时自动创建。
 
 ### 3. 后端配置
 
 ```bash
 cd backend
-
-# 安装依赖
-pnpm install
 
 # 复制环境变量配置文件
 cp .env.example .env
@@ -81,37 +80,37 @@ cp .env.example .env
 # DB_HOST=localhost
 # DB_PORT=3306
 # DB_USER=root
-# DB_PASSWORD=your_password
+# DB_PASSWORD=your_password  # 必须修改
 # DB_NAME=career_planning
-# JWT_SECRET=your_jwt_secret
-
-# 启动开发服务器
-pnpm dev
+# JWT_SECRET=your_jwt_secret  # 必须修改
 ```
 
-后端服务将运行在 http://localhost:5000
-
-### 4. 前端配置
-
-```bash
-cd frontend
-
-# 安装依赖
-pnpm install
-
-# 启动开发服务器
-pnpm dev
-```
-
-前端服务将运行在 http://localhost:3000
-
-### 5. 一键启动（推荐）
+### 4. 一键启动（推荐）
 
 ```bash
 # 在项目根目录
 pnpm install       # 安装 concurrently
 pnpm install:all   # 安装前后端依赖
 pnpm dev           # 同时启动前后端服务
+```
+
+后端启动时会自动：
+- 创建所有数据表（Sequelize sync）
+- 插入默认剧本和勋章数据
+- 创建管理员账户：`admin` / `admin123`
+
+服务地址：
+- 前端：http://localhost:3000
+- 后端：http://localhost:5000
+
+### 5. 分别启动（可选）
+
+```bash
+# 启动后端
+cd backend && pnpm install && pnpm dev
+
+# 新终端启动前端
+cd frontend && pnpm install && pnpm dev
 ```
 
 ## 页面功能
