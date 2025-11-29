@@ -224,15 +224,20 @@ router.get('/scripts', async (req, res) => {
  */
 router.post('/scripts', async (req, res) => {
   try {
-    const { title, content, type, location, backgroundImage, triggerCondition, options } = req.body
+    const { title, content, contents, type, location, backgroundImage, triggerCondition, options } = req.body
 
-    if (!title || !content || !type || !location) {
+    if (!title || !type || !location) {
       return res.status(400).json({ error: '缺少必要字段' })
     }
 
+    // 确保至少有内容
+    const finalContent = content || (contents && contents[0]) || ''
+    const finalContents = contents && contents.length > 0 ? contents : (content ? [content] : [''])
+
     const script = await Script.create({
       title,
-      content,
+      content: finalContent,
+      contents: finalContents,
       type,
       location,
       backgroundImage: backgroundImage || null,
@@ -256,16 +261,21 @@ router.post('/scripts', async (req, res) => {
 router.put('/scripts/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { title, content, type, location, backgroundImage, triggerCondition, options } = req.body
+    const { title, content, contents, type, location, backgroundImage, triggerCondition, options } = req.body
 
     const script = await Script.findByPk(id)
     if (!script) {
       return res.status(404).json({ error: '剧本不存在' })
     }
 
+    // 确保 contents 和 content 同步
+    const finalContent = content || (contents && contents[0]) || script.content
+    const finalContents = contents && contents.length > 0 ? contents : (content ? [content] : script.contents)
+
     await script.update({
       title,
-      content,
+      content: finalContent,
+      contents: finalContents,
       type,
       location,
       backgroundImage: backgroundImage !== undefined ? backgroundImage : script.backgroundImage,

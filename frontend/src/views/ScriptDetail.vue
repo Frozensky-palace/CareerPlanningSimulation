@@ -1,13 +1,16 @@
 <template>
   <div class="script-detail-page">
+    <!-- 背景图片层 -->
+    <div class="background-layer" :style="backgroundStyle"></div>
+
     <!-- 顶部导航栏 -->
     <header class="script-header">
-      <div class="max-w-4xl mx-auto flex justify-between items-center">
-        <div class="flex items-center gap-3">
-          <el-icon :size="20" class="text-secondary-500 cursor-pointer hover:opacity-70" @click="handleBack">
+      <div class="header-content">
+        <div class="header-left">
+          <el-icon :size="20" class="back-icon" @click="handleBack">
             <ArrowLeft />
           </el-icon>
-          <span class="font-semibold text-lg text-gray-800">{{ script?.title || '加载中...' }}</span>
+          <span class="script-title">{{ script?.title || '加载中...' }}</span>
         </div>
         <el-tag v-if="script" :type="getTypeTag()" size="small">
           {{ getTypeLabel() }}
@@ -15,81 +18,85 @@
       </div>
     </header>
 
-    <!-- 主内容区 -->
-    <main class="script-main">
-      <div class="max-w-4xl mx-auto px-4 py-8">
-        <!-- 加载中 -->
-        <div v-if="loading" class="flex justify-center py-20">
-          <el-icon class="is-loading" :size="40" color="#1A8FFF">
-            <Loading />
-          </el-icon>
-        </div>
+    <!-- 加载中 -->
+    <div v-if="loading" class="loading-overlay">
+      <el-icon class="is-loading" :size="40" color="#1A8FFF">
+        <Loading />
+      </el-icon>
+    </div>
 
-        <!-- 剧本内容 -->
-        <div v-else-if="script" class="animate-fade-in">
-          <!-- 背景图片 -->
-          <div v-if="script.backgroundImage" class="background-image-wrapper mb-6">
-            <img :src="getImageUrl(script.backgroundImage)" alt="剧本背景" class="background-image" />
+    <!-- 主内容区 -->
+    <main v-else-if="script" class="script-main">
+      <!-- 选项按钮区域（独立的长按钮，在屏幕中间偏下） -->
+      <transition name="fade-up">
+        <div v-if="showOptions && !selectedOption" class="options-area">
+          <div
+            v-for="option in script.options"
+            :key="option.id"
+            class="option-btn"
+            @click="handleOptionClick(option)"
+          >
+            <span class="option-text">{{ option.text }}</span>
+            <div v-if="hasValueChanges(option)" class="option-preview">
+              <ValueChangeDisplay :changes="option.attributeChanges" compact />
+            </div>
+            <el-icon class="option-arrow"><ArrowRight /></el-icon>
+          </div>
+        </div>
+      </transition>
+
+      <!-- 底部内容面板 -->
+      <div class="narrator-panel">
+        <div class="narrator-content">
+          <!-- 场景标签 -->
+          <div class="scene-tag">
+            <el-icon><Location /></el-icon>
+            <span>{{ getLocationLabel(script.location) }}</span>
           </div>
 
-          <!-- 剧本内容卡片 -->
-          <div class="bg-white rounded-2xl shadow-medium p-6 md:p-8 mb-6">
-            <!-- 场景信息 -->
-            <div class="flex items-center gap-2 text-sm text-gray-500 mb-4">
-              <el-icon><Location /></el-icon>
-              <span>{{ script.location }}</span>
+          <!-- 内容显示区域（未选择选项时） -->
+          <div v-if="!selectedOption" class="content-area">
+            <!-- 当前段落内容 -->
+            <div class="narrator-text" @click="handleContentClick">
+              <p>{{ currentContent }}</p>
             </div>
 
-            <!-- 剧本文本 -->
-            <div class="prose prose-sm max-w-none mb-6">
-              <p class="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {{ script.content }}
-              </p>
-            </div>
-
-            <!-- 选项列表 -->
-            <div v-if="!selectedOption" class="space-y-3">
-              <div class="text-sm font-medium text-gray-600 mb-3">请选择你的行动：</div>
+            <!-- 段落导航指示器 -->
+            <div v-if="totalSegments > 1" class="segment-nav">
               <div
-                v-for="option in script.options"
-                :key="option.id"
-                class="option-card bg-gray-50 hover:bg-secondary-50 border-2 border-transparent hover:border-secondary-200 rounded-xl p-4 cursor-pointer transition-all group"
-                @click="handleOptionClick(option)"
+                v-for="i in totalSegments"
+                :key="i"
+                class="segment-dot"
+                :class="{ active: i - 1 === currentSegmentIndex, visited: i - 1 < currentSegmentIndex }"
+                @click="goToSegment(i - 1)"
               >
-                <div class="flex justify-between items-start">
-                  <span class="text-sm text-gray-700 group-hover:text-secondary-700 flex-1">
-                    {{ option.text }}
-                  </span>
-                  <el-icon :size="16" class="text-secondary-500 group-hover:translate-x-1 transition-transform">
-                    <ArrowRight />
-                  </el-icon>
-                </div>
-
-                <!-- 数值变化预览 -->
-                <ValueChangeDisplay v-if="hasValueChanges(option)" :changes="option.attributeChanges" class="mt-2" compact />
+                {{ i }}
               </div>
+              <span class="segment-hint">{{ currentSegmentIndex + 1 }} / {{ totalSegments }}</span>
             </div>
 
-            <!-- 反馈展示 -->
-            <div v-else class="animate-slide-up">
-              <div class="bg-secondary-50 border-l-4 border-secondary-500 rounded-lg p-4 mb-4">
-                <p class="text-sm text-gray-700">你做出了选择...</p>
-              </div>
-
-              <!-- 数值变化动画 -->
-              <ValueChangeDisplay :changes="selectedOption.attributeChanges" class="mb-4" />
-
-              <!-- 继续按钮 -->
-              <el-button
-                type="primary"
-                size="large"
-                class="!w-full !rounded-xl !h-12 !bg-secondary-500 !border-secondary-500 !text-white hover:!bg-secondary-600 hover:!border-secondary-600 shadow-glow-blue"
-                @click="handleContinue"
-                :loading="continuing"
-              >
-                完成并返回
-              </el-button>
+            <!-- 点击提示 -->
+            <div v-if="!contentFinished" class="click-hint">
+              <el-icon><ArrowRight /></el-icon>
+              <span>{{ isLastSegment ? '点击选择行动' : '点击继续' }}</span>
             </div>
+          </div>
+
+          <!-- 结果反馈（选择后显示） -->
+          <div v-else class="result-area">
+            <div class="result-feedback">
+              <p class="result-text">你做出了选择...</p>
+              <ValueChangeDisplay :changes="selectedOption.attributeChanges" />
+            </div>
+            <el-button
+              type="primary"
+              size="large"
+              class="continue-btn"
+              @click="handleContinue"
+              :loading="continuing"
+            >
+              {{ getContinueButtonText() }}
+            </el-button>
           </div>
         </div>
       </div>
@@ -98,14 +105,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import { ArrowLeft, ArrowRight, Loading, Location } from '@element-plus/icons-vue'
 import request from '@/services/api'
 import { useGameStore } from '@/stores/gameStore'
 import type { Script, ScriptOption } from '@/types'
-import ValueChangeDisplay from '@/components/script/ValueChangeDisplay.vue'
+import ValueChangeDisplay from '@/components/Script/ValueChangeDisplay.vue'
+import { getSceneLabel } from '@/config/scenes'
 
 const route = useRoute()
 const router = useRouter()
@@ -115,6 +123,49 @@ const loading = ref(true)
 const continuing = ref(false)
 const script = ref<Script | null>(null)
 const selectedOption = ref<ScriptOption | null>(null)
+const currentSegmentIndex = ref(0)
+const contentFinished = ref(false)  // 是否已阅读完所有内容
+
+// 获取所有内容段落
+const contentSegments = computed(() => {
+  if (!script.value) return []
+  // 优先使用 contents 数组，如果没有则使用 content 作为单段
+  if (script.value.contents && script.value.contents.length > 0) {
+    return script.value.contents
+  }
+  return script.value.content ? [script.value.content] : []
+})
+
+// 总段落数
+const totalSegments = computed(() => contentSegments.value.length)
+
+// 当前显示的内容
+const currentContent = computed(() => {
+  return contentSegments.value[currentSegmentIndex.value] || ''
+})
+
+// 是否在最后一段
+const isLastSegment = computed(() => {
+  return currentSegmentIndex.value >= totalSegments.value - 1
+})
+
+// 是否显示选项（最后一段内容看完后再次点击）
+const showOptions = computed(() => {
+  return contentFinished.value
+})
+
+// 背景样式
+const backgroundStyle = computed(() => {
+  if (!script.value?.backgroundImage) {
+    return {
+      backgroundColor: '#1a1a2e'
+    }
+  }
+  const imageUrl = getImageUrl(script.value.backgroundImage)
+  return {
+    backgroundImage: `url(${imageUrl})`
+  }
+})
 
 const getTypeLabel = () => {
   const labels: Record<string, string> = {
@@ -134,9 +185,39 @@ const getTypeTag = () => {
   return tags[script.value?.type || ''] || 'info'
 }
 
+const getLocationLabel = (location: string) => {
+  return getSceneLabel(location)
+}
+
 const hasValueChanges = (option: ScriptOption) => {
   const changes = option.attributeChanges
   return !!(changes.de || changes.zhi || changes.ti || changes.mei || changes.lao)
+}
+
+const getContinueButtonText = () => {
+  if (selectedOption.value?.nextScriptId) {
+    return '继续'
+  }
+  return '完成并返回'
+}
+
+// 点击内容区域，前进到下一段或显示选项
+const handleContentClick = () => {
+  if (currentSegmentIndex.value < totalSegments.value - 1) {
+    // 还有下一段内容
+    currentSegmentIndex.value++
+  } else if (!contentFinished.value) {
+    // 已经是最后一段，再次点击显示选项
+    contentFinished.value = true
+  }
+}
+
+// 点击段落指示器跳转到指定段落
+const goToSegment = (index: number) => {
+  // 只能跳转到已看过的段落或当前段落
+  if (index <= currentSegmentIndex.value) {
+    currentSegmentIndex.value = index
+  }
 }
 
 const loadScript = async () => {
@@ -210,15 +291,17 @@ const handleContinue = async () => {
     // 检查勋章解锁
     await checkBadges()
 
-    ElMessage.success('剧本完成！')
-
     // 检查是否需要触发结算
     if (res.data?.needSettlement) {
       router.push('/settlement')
     } else if (res.data?.nextScriptId) {
       // 如果有下一个剧本（事件链），跳转到下一个剧本
       router.replace(`/script/${res.data.nextScriptId}`)
+    } else if (selectedOption.value?.nextScriptId) {
+      // 选项自带跳转
+      router.replace(`/script/${selectedOption.value.nextScriptId}`)
     } else {
+      ElMessage.success('剧本完成！')
       router.push('/campus-map')
     }
   } catch (error) {
@@ -246,6 +329,8 @@ watch(
       // 重置状态
       selectedOption.value = null
       script.value = null
+      currentSegmentIndex.value = 0
+      contentFinished.value = false
       loadScript()
     }
   }
@@ -262,62 +347,394 @@ onMounted(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f5f7fa;
   overflow: hidden;
+  position: relative;
+  background-color: #e8f0f8;
 }
 
+/* 背景层 */
+.background-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+/* 顶部导航 */
 .script-header {
-  flex-shrink: 0;
-  background: white;
+  position: relative;
+  z-index: 10;
+  background: #ffffff;
   border-bottom: 1px solid #f0f0f0;
-  padding: 12px 24px;
+  height: 56px;
 }
 
+.header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-icon {
+  color: #1A8FFF;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.back-icon:hover {
+  opacity: 0.7;
+}
+
+.script-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  letter-spacing: 0.3px;
+}
+
+/* 加载中 */
+.loading-overlay {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 56px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  background: rgba(232, 240, 248, 0.8);
+}
+
+/* 主内容 */
 .script-main {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 0;
-}
-
-.background-image-wrapper {
-  width: 100%;
-  max-width: 100%;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.background-image {
-  width: 100%;
-  height: auto;
-  max-height: 400px;
-  object-fit: cover;
-  display: block;
-}
-
-.option-card {
   position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 24px;
 }
 
-.option-card::before {
-  content: '';
+/* 选项按钮区域 */
+.options-area {
   position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 0;
-  background: #1A8FFF;
-  transition: height 0.3s;
-  border-radius: 0 2px 2px 0;
+  bottom: 400px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 550px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 10;
 }
 
-.option-card:hover::before {
-  height: 60%;
+.option-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+  animation: slideUp 0.4s ease-out backwards;
 }
 
-.prose p {
+.option-btn:nth-child(1) { animation-delay: 0.05s; }
+.option-btn:nth-child(2) { animation-delay: 0.1s; }
+.option-btn:nth-child(3) { animation-delay: 0.15s; }
+.option-btn:nth-child(4) { animation-delay: 0.2s; }
+.option-btn:nth-child(5) { animation-delay: 0.25s; }
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.option-btn:hover {
+  background: rgba(240, 247, 255, 0.95);
+  border-color: #1A8FFF;
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(26, 143, 255, 0.15);
+}
+
+.option-text {
+  flex: 1;
+  color: #2c3e50;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.option-preview {
+  flex-shrink: 0;
+}
+
+.option-arrow {
+  color: #adb5bd;
+  font-size: 14px;
+  transition: transform 0.3s, color 0.3s;
+}
+
+.option-btn:hover .option-arrow {
+  color: #1A8FFF;
+  transform: translateX(3px);
+}
+
+/* 底部内容面板 */
+.narrator-panel {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 24px;
+}
+
+.narrator-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* 场景标签 */
+.scene-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #f0f7ff;
+  border: 1px solid #bae0ff;
+  border-radius: 20px;
+  color: #1A8FFF;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+/* 内容区域 */
+.content-area {
+  animation: fadeIn 0.3s ease;
+}
+
+/* 叙述文本 */
+.narrator-text {
+  background: #f8f9fa;
+  border-left: 3px solid #1A8FFF;
+  padding: 16px 20px;
+  border-radius: 0 12px 12px 0;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.narrator-text:hover {
+  background: #f0f4f8;
+}
+
+.narrator-text p {
   margin: 0;
+  color: #495057;
+  font-size: 15px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+/* 段落导航 */
+.segment-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.segment-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #e9ecef;
+  color: #6c757d;
+  border: 2px solid transparent;
+}
+
+.segment-dot.visited {
+  background: #d4edda;
+  color: #28a745;
+  border-color: #28a745;
+}
+
+.segment-dot.active {
+  background: #1A8FFF;
+  color: #fff;
+  border-color: #1A8FFF;
+  transform: scale(1.1);
+}
+
+.segment-dot:hover:not(.active) {
+  background: #dee2e6;
+}
+
+.segment-hint {
+  margin-left: auto;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+/* 点击提示 */
+.click-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #1A8FFF;
+  font-size: 13px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* 结果区域 */
+.result-area {
+  animation: fadeInUp 0.4s ease;
+}
+
+.result-feedback {
+  background: #f0f7ff;
+  border: 1px solid #bae0ff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.result-text {
+  color: #495057;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 16px 0;
+}
+
+.continue-btn {
+  width: 100%;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1A8FFF 0%, #0070E0 100%);
+  border: none;
+}
+
+.continue-btn:hover {
+  background: linear-gradient(135deg, #0070E0 0%, #005bb5 100%);
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-up-enter-active,
+.fade-up-leave-active {
+  transition: all 0.4s ease;
+}
+
+.fade-up-enter-from,
+.fade-up-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .script-main {
+    padding: 16px;
+  }
+
+  .narrator-panel {
+    padding: 20px;
+    border-radius: 12px;
+  }
+
+  .narrator-text {
+    padding: 12px 16px;
+  }
+
+  .narrator-text p {
+    font-size: 14px;
+  }
+
+  .options-area {
+    bottom: 200px;
+    width: 94%;
+    gap: 8px;
+  }
+
+  .option-btn {
+    padding: 10px 12px;
+  }
+
+  .option-text {
+    font-size: 13px;
+  }
+
+  .segment-dot {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
 }
 </style>

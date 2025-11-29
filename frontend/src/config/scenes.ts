@@ -19,7 +19,7 @@ export const SCENE_CONFIGS: SceneConfig[] = [
     location: 'stadium',
     icon: 'stadium.webp',
     color: '#FF7043',  // 橙色
-    position: { x: 30, y: 5 }  // 顶部中间偏左，田径场位置
+    position: { x: 40, y: 15 }  // 顶部中间偏左，田径场位置
   },
   {
     id: 'dormitory',
@@ -27,7 +27,7 @@ export const SCENE_CONFIGS: SceneConfig[] = [
     location: 'dormitory',
     icon: 'dormitory.webp',
     color: '#42A5F5',  // 蓝色
-    position: { x: 12, y: 12 }  // 左上角宿舍区
+    position: { x: 23, y: 21 }  // 左上角宿舍区
   },
   {
     id: 'plaza',
@@ -35,7 +35,7 @@ export const SCENE_CONFIGS: SceneConfig[] = [
     location: 'plaza',
     icon: 'plaza.webp',
     color: '#66BB6A',  // 绿色
-    position: { x: 83, y: 8 }  // 右上角，湖边文化广场
+    position: { x: 68, y: 25 }  // 右上角，湖边文化广场
   },
   {
     id: 'library',
@@ -43,7 +43,7 @@ export const SCENE_CONFIGS: SceneConfig[] = [
     location: 'library',
     icon: 'library.webp',
     color: '#29B6F6',  // 浅蓝色
-    position: { x: 45, y: 28 }  // 中间偏上，图书馆建筑
+    position: { x: 40, y: 38 }  // 中间偏上，图书馆建筑
   },
   {
     id: 'academic',
@@ -51,7 +51,7 @@ export const SCENE_CONFIGS: SceneConfig[] = [
     location: 'academic',
     icon: 'academic.webp',
     color: '#81C784',  // 浅绿色
-    position: { x: 55, y: 45 }  // 中间位置，教学楼群
+    position: { x: 48, y: 60 }  // 中间位置，教学楼群
   },
   {
     id: 'student_center',
@@ -59,7 +59,7 @@ export const SCENE_CONFIGS: SceneConfig[] = [
     location: 'student_center',
     icon: 'student_center.webp',
     color: '#F48FB1',  // 粉色
-    position: { x: 85, y: 40 }  // 右侧中间
+    position: { x: 75, y: 45 }  // 右侧中间
   },
   {
     id: 'club_center',
@@ -67,7 +67,7 @@ export const SCENE_CONFIGS: SceneConfig[] = [
     location: 'club_center',
     icon: 'club_center.webp',
     color: '#BA68C8',  // 紫色
-    position: { x: 10, y: 40 }  // 左侧中间
+    position: { x: 25, y: 55 }  // 左侧中间
   },
   {
     id: 'research_base',
@@ -75,7 +75,7 @@ export const SCENE_CONFIGS: SceneConfig[] = [
     location: 'research_base',
     icon: 'research_base.webp',
     color: '#4DD0E1',  // 青色
-    position: { x: 38, y: 62 }  // 中下偏左
+    position: { x: 42, y: 82 }  // 中下偏左
   },
   {
     id: 'maker_space',
@@ -83,7 +83,7 @@ export const SCENE_CONFIGS: SceneConfig[] = [
     location: 'maker_space',
     icon: 'maker_space.webp',
     color: '#FFB74D',  // 橙黄色
-    position: { x: 65, y: 78 }  // 右下角
+    position: { x: 54, y: 80 }  // 右下角
   }
 ]
 

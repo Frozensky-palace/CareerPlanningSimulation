@@ -11,10 +11,22 @@
       <el-tab-pane label="基本信息" name="info">
         <div class="info-section">
           <div class="avatar-section">
-            <el-avatar :size="100" class="user-avatar-large">
-              <el-icon :size="50"><User /></el-icon>
-            </el-avatar>
-            <el-button text class="change-avatar-btn">更换头像</el-button>
+            <div class="avatar-wrapper" @click="triggerAvatarUpload">
+              <el-avatar :size="100" :src="userStore.avatar" class="user-avatar-large">
+                <el-icon :size="50"><User /></el-icon>
+              </el-avatar>
+              <div class="avatar-overlay">
+                <el-icon :size="24"><Camera /></el-icon>
+                <span>更换头像</span>
+              </div>
+            </div>
+            <input
+              ref="avatarInputRef"
+              type="file"
+              accept="image/*"
+              class="avatar-input"
+              @change="handleAvatarChange"
+            />
           </div>
 
           <div class="info-details">
@@ -196,7 +208,8 @@ import {
   Flag,
   Promotion,
   Calendar,
-  Reading
+  Reading,
+  Camera
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/userStore'
 import { useGameStore } from '@/stores/gameStore'
@@ -213,6 +226,51 @@ const activeTab = ref('info')
 const allBadges = ref<any[]>([])
 const unlockedBadges = ref<number[]>([])
 const totalSaves = ref(0)
+
+// 头像上传
+const avatarInputRef = ref<HTMLInputElement | null>(null)
+
+const triggerAvatarUpload = () => {
+  avatarInputRef.value?.click()
+}
+
+const handleAvatarChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  // 验证文件类型
+  if (!file.type.startsWith('image/')) {
+    ElMessage.error('请选择图片文件')
+    return
+  }
+
+  // 验证文件大小（最大 2MB）
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.error('图片大小不能超过 2MB')
+    return
+  }
+
+  try {
+    const formData = new FormData()
+    formData.append('avatar', file)
+
+    const res: any = await request.post('/auth/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+
+    // res 是 response.data，所以直接访问 res.data.avatar
+    if (res.data?.avatar) {
+      userStore.setAvatar(res.data.avatar)
+      ElMessage.success('头像更新成功')
+    }
+  } catch {
+    // 错误已在拦截器中处理
+  }
+
+  // 清空input以便可以再次选择同一文件
+  target.value = ''
+}
 
 // 个人信息编辑
 const isEditingInfo = ref(false)
@@ -495,14 +553,43 @@ onMounted(() => {
   gap: 12px;
 }
 
+.avatar-wrapper {
+  position: relative;
+  cursor: pointer;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.avatar-wrapper:hover .avatar-overlay {
+  opacity: 1;
+}
+
 .user-avatar-large {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
   font-weight: 600;
 }
 
-.change-avatar-btn {
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: white;
   font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.avatar-input {
+  display: none;
 }
 
 .info-details {

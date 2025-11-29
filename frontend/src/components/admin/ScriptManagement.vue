@@ -122,12 +122,60 @@
             </el-select>
           </el-form-item>
           <el-form-item label="内容" required>
-            <el-input
-              v-model="currentScript.content"
-              type="textarea"
-              :rows="4"
-              placeholder="输入剧本内容描述"
-            />
+            <div class="contents-editor">
+              <div class="contents-header">
+                <span class="contents-label">内容段落（点击切换顺序显示）</span>
+                <el-button size="small" :icon="Plus" @click="handleAddContent">
+                  添加段落
+                </el-button>
+              </div>
+              <div class="contents-list">
+                <div
+                  v-for="(content, index) in currentScript.contents"
+                  :key="index"
+                  class="content-item"
+                >
+                  <div class="content-header">
+                    <span class="content-number">段落 {{ index + 1 }}</span>
+                    <div class="content-actions">
+                      <el-button
+                        v-if="index > 0"
+                        link
+                        size="small"
+                        @click="moveContentUp(index)"
+                      >
+                        上移
+                      </el-button>
+                      <el-button
+                        v-if="index < currentScript.contents.length - 1"
+                        link
+                        size="small"
+                        @click="moveContentDown(index)"
+                      >
+                        下移
+                      </el-button>
+                      <el-button
+                        link
+                        type="danger"
+                        size="small"
+                        :icon="Delete"
+                        @click="handleRemoveContent(index)"
+                        :disabled="currentScript.contents.length <= 1"
+                      >
+                        删除
+                      </el-button>
+                    </div>
+                  </div>
+                  <el-input
+                    :model-value="currentScript.contents[index]"
+                    @update:model-value="(val) => updateContent(index, val)"
+                    type="textarea"
+                    :rows="3"
+                    placeholder="输入本段内容"
+                  />
+                </div>
+              </div>
+            </div>
           </el-form-item>
           <el-form-item label="背景图片">
             <div class="background-upload">
@@ -314,6 +362,23 @@
                   class="attr-input"
                 />
               </div>
+              <div class="option-jump">
+                <span class="label">跳转剧本：</span>
+                <el-select
+                  v-model="option.nextScriptId"
+                  placeholder="选择跳转的剧本（可选）"
+                  clearable
+                  class="jump-select"
+                >
+                  <el-option
+                    v-for="s in allScripts.filter(item => item.id !== currentScript.id)"
+                    :key="s.id"
+                    :label="`#${s.id} ${s.title}`"
+                    :value="s.id"
+                  />
+                </el-select>
+                <span class="jump-hint">选择后，点击此选项将跳转到指定剧本</span>
+              </div>
             </div>
           </div>
         </div>
@@ -358,6 +423,7 @@ const emptyScript = () => ({
   id: 0,
   title: '',
   content: '',
+  contents: [''] as string[],  // 多段内容数组
   type: 'branch' as const,
   location: SCENE_CONFIGS[0]?.location || 'library',  // 默认使用第一个场景
   backgroundImage: null as string | null,
@@ -367,7 +433,7 @@ const emptyScript = () => ({
     minAttributes: { de: 0, zhi: 0, ti: 0, mei: 0, lao: 0 },
     requiredScripts: [] as number[]
   },
-  options: [] as Array<{ id: number; text: string; attributeChanges: { de?: number; zhi?: number; ti?: number; mei?: number; lao?: number } }>
+  options: [] as Array<{ id: number; text: string; attributeChanges: { de?: number; zhi?: number; ti?: number; mei?: number; lao?: number }; nextScriptId?: number | null }>
 })
 
 const currentScript = ref<any>(emptyScript())
@@ -447,6 +513,10 @@ const handleEditScript = (script: Script) => {
     },
     requiredScripts: scriptCopy.triggerCondition.requiredScripts || []
   }
+  // 确保 contents 数组存在，兼容旧数据
+  if (!scriptCopy.contents || scriptCopy.contents.length === 0) {
+    scriptCopy.contents = scriptCopy.content ? [scriptCopy.content] : ['']
+  }
   // 确保选项的属性变化字段存在
   if (scriptCopy.options) {
     scriptCopy.options = scriptCopy.options.map((opt: any, idx: number) => ({
@@ -458,7 +528,8 @@ const handleEditScript = (script: Script) => {
         ti: opt.attributeChanges?.ti || 0,
         mei: opt.attributeChanges?.mei || 0,
         lao: opt.attributeChanges?.lao || 0
-      }
+      },
+      nextScriptId: opt.nextScriptId || null
     }))
   } else {
     scriptCopy.options = []
@@ -488,6 +559,10 @@ const handleDuplicateScript = (script: Script) => {
     },
     requiredScripts: duplicated.triggerCondition.requiredScripts || []
   }
+  // 确保 contents 数组存在，兼容旧数据
+  if (!duplicated.contents || duplicated.contents.length === 0) {
+    duplicated.contents = duplicated.content ? [duplicated.content] : ['']
+  }
   // 确保选项的属性变化字段存在
   if (duplicated.options) {
     duplicated.options = duplicated.options.map((opt: any, idx: number) => ({
@@ -499,7 +574,8 @@ const handleDuplicateScript = (script: Script) => {
         ti: opt.attributeChanges?.ti || 0,
         mei: opt.attributeChanges?.mei || 0,
         lao: opt.attributeChanges?.lao || 0
-      }
+      },
+      nextScriptId: opt.nextScriptId || null
     }))
   } else {
     duplicated.options = []
@@ -531,7 +607,8 @@ const handleAddOption = () => {
   currentScript.value.options.push({
     id: currentScript.value.options.length + 1,
     text: '',
-    attributeChanges: { de: 0, zhi: 0, ti: 0, mei: 0, lao: 0 }
+    attributeChanges: { de: 0, zhi: 0, ti: 0, mei: 0, lao: 0 },
+    nextScriptId: null
   })
 }
 
@@ -539,15 +616,63 @@ const handleRemoveOption = (index: number) => {
   currentScript.value.options.splice(index, 1)
 }
 
+// 多段内容管理
+const updateContent = (index: number, value: string) => {
+  const newContents = [...currentScript.value.contents]
+  newContents[index] = value
+  currentScript.value.contents = newContents
+}
+
+const handleAddContent = () => {
+  currentScript.value.contents = [...currentScript.value.contents, '']
+}
+
+const handleRemoveContent = (index: number) => {
+  if (currentScript.value.contents.length > 1) {
+    currentScript.value.contents = currentScript.value.contents.filter((_, i) => i !== index)
+  }
+}
+
+const moveContentUp = (index: number) => {
+  if (index > 0) {
+    const newContents = [...currentScript.value.contents]
+    const temp = newContents[index]
+    newContents[index] = newContents[index - 1]
+    newContents[index - 1] = temp
+    currentScript.value.contents = newContents
+  }
+}
+
+const moveContentDown = (index: number) => {
+  if (index < currentScript.value.contents.length - 1) {
+    const newContents = [...currentScript.value.contents]
+    const temp = newContents[index]
+    newContents[index] = newContents[index + 1]
+    newContents[index + 1] = temp
+    currentScript.value.contents = newContents
+  }
+}
+
 const handleSaveScript = async () => {
   try {
     saving.value = true
 
+    // 过滤掉空字符串的内容段落
+    const validContents = currentScript.value.contents.filter((c: string) => c && c.trim() !== '')
+    const finalContents = validContents.length > 0 ? validContents : ['']
+
+    // 同步 content 字段（用于向后兼容，取第一段内容）
+    const scriptData = {
+      ...currentScript.value,
+      contents: finalContents,
+      content: finalContents[0] || ''
+    }
+
     if (isEditing.value) {
-      await request.put(`/admin/scripts/${currentScript.value.id}`, currentScript.value)
+      await request.put(`/admin/scripts/${currentScript.value.id}`, scriptData)
       ElMessage.success('更新成功')
     } else {
-      await request.post('/admin/scripts', currentScript.value)
+      await request.post('/admin/scripts', scriptData)
       ElMessage.success('创建成功')
     }
 
@@ -732,6 +857,30 @@ onMounted(() => {
   width: 100px;
 }
 
+.option-jump {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #e5e7eb;
+}
+
+.option-jump .label {
+  font-size: 13px;
+  color: #606266;
+}
+
+.jump-select {
+  width: 280px;
+}
+
+.jump-hint {
+  font-size: 12px;
+  color: #909399;
+}
+
 .w-full {
   width: 100%;
 }
@@ -801,5 +950,57 @@ onMounted(() => {
   height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* 多段内容编辑器样式 */
+.contents-editor {
+  width: 100%;
+}
+
+.contents-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.contents-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #606266;
+}
+
+.contents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.content-item {
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.content-number {
+  font-size: 13px;
+  font-weight: 600;
+  color: #409EFF;
+  background: #f0f7ff;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.content-actions {
+  display: flex;
+  gap: 4px;
 }
 </style>

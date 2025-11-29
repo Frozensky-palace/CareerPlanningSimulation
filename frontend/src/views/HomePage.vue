@@ -25,7 +25,9 @@
             <template v-if="userStore.isLoggedIn">
               <div class="user-info">
                 <div class="avatar-wrapper">
-                  <el-icon :size="40" class="avatar-icon"><UserFilled /></el-icon>
+                  <el-avatar :size="56" :src="userStore.avatar" class="user-avatar">
+                    <el-icon :size="28"><UserFilled /></el-icon>
+                  </el-avatar>
                 </div>
                 <div class="user-details">
                   <span class="username">{{ userStore.username }}</span>
@@ -635,15 +637,14 @@ onMounted(async () => {
 .avatar-wrapper {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.avatar-icon {
-  color: #1A8FFF;
+.user-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
 }
 
 .user-details {

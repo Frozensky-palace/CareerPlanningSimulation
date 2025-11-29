@@ -68,6 +68,7 @@ export interface Script {
   id: number
   title: string
   content: string
+  contents?: string[]  // 多段内容数组，用于分段显示
   type: 'main' | 'branch' | 'special'
   location: string
   backgroundImage?: string | null  // 剧本背景图片URL

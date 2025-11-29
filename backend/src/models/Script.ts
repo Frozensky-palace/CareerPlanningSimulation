@@ -32,6 +32,7 @@ interface ScriptAttributes {
   id: number
   title: string
   content: string
+  contents: string[]        // 多段内容数组
   type: ScriptType
   location: string          // 触发地点
   backgroundImage: string | null  // 剧本背景图片URL
@@ -42,12 +43,13 @@ interface ScriptAttributes {
   updatedAt?: Date
 }
 
-interface ScriptCreationAttributes extends Optional<ScriptAttributes, 'id' | 'isActive' | 'backgroundImage'> {}
+interface ScriptCreationAttributes extends Optional<ScriptAttributes, 'id' | 'isActive' | 'backgroundImage' | 'contents'> {}
 
 class Script extends Model<ScriptAttributes, ScriptCreationAttributes> implements ScriptAttributes {
   declare id: number
   declare title: string
   declare content: string
+  declare contents: string[]
   declare type: ScriptType
   declare location: string
   declare backgroundImage: string | null
@@ -72,6 +74,11 @@ Script.init(
     content: {
       type: DataTypes.TEXT,
       allowNull: false
+    },
+    contents: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      defaultValue: []
     },
     type: {
       type: DataTypes.ENUM('main', 'branch', 'special'),

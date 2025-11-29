@@ -12,6 +12,7 @@ export const useUserStore = defineStore('user', {
     userId: (state) => state.user?.id || 0,
     username: (state) => state.user?.username || '',
     email: (state) => state.user?.email || '',
+    avatar: (state) => state.user?.avatar || '',
     createdAt: (state) => state.user?.createdAt || ''
   },
 
@@ -34,6 +35,12 @@ export const useUserStore = defineStore('user', {
     setEmail(email: string) {
       if (this.user) {
         this.user.email = email
+      }
+    },
+
+    setAvatar(avatar: string) {
+      if (this.user) {
+        this.user.avatar = avatar
       }
     },
 

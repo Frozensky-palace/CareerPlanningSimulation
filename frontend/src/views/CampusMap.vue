@@ -194,8 +194,9 @@ onMounted(async () => {
   left: 0;
   width: 100%;
   height: 100%;
+  background-color: #e8f0f8;
   background-image: url('/images/campus-bg.webp');
-  background-size: cover;
+  background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
 }
