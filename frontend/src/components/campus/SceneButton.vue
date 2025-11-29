@@ -189,8 +189,9 @@ const handleClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid var(--scene-color);
+  border: 2px solid var(--scene-color);
   transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .scene-button:hover .button-body {
@@ -203,8 +204,8 @@ const handleClick = () => {
 
 /* 图标容器 */
 .icon-container {
-  width: 36px;
-  height: 36px;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -213,8 +214,7 @@ const handleClick = () => {
 .scene-icon {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  object-fit: cover;
   transition: transform 0.3s ease;
 }
 
