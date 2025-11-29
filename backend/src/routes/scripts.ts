@@ -14,18 +14,18 @@ interface UnlockResult {
 
 const checkScriptUnlock = (script: any, save: any): UnlockResult => {
   const condition = script.triggerCondition || {}
-  const completed = save.completedScripts || []
+  const completed = save?.completedScripts || []
 
   // 检查学期条件
   if (condition.semester && condition.semester.length > 0) {
-    if (!condition.semester.includes(save.semester)) {
+    if (!condition.semester.includes(save?.semester)) {
       return { unlocked: false, reason: `需要在第${condition.semester.join('/')}学期` }
     }
   }
 
   // 检查周条件
   if (condition.week && condition.week.length > 0) {
-    if (!condition.week.includes(save.week)) {
+    if (!condition.week.includes(save?.week)) {
       return { unlocked: false, reason: `需要在第${condition.week.join('/')}周` }
     }
   }
@@ -40,9 +40,9 @@ const checkScriptUnlock = (script: any, save: any): UnlockResult => {
 
   // 检查属性要求
   if (condition.minAttributes) {
-    const attrs = save.attributes
+    const attrs = save?.attributes || { de: 50, zhi: 50, ti: 50, mei: 50, lao: 50 }
     for (const [key, minValue] of Object.entries(condition.minAttributes)) {
-      if (attrs[key] < (minValue as number)) {
+      if ((attrs[key] ?? 0) < (minValue as number)) {
         const attrNames: Record<string, string> = { de: '德育', zhi: '智育', ti: '体育', mei: '美育', lao: '劳育' }
         return { unlocked: false, reason: `${attrNames[key] || key}需达到${minValue}` }
       }

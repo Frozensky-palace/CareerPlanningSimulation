@@ -561,7 +561,12 @@ export async function seedDatabase() {
     // 检查剧本是否已有数据
     const scriptCount = await Script.count()
     if (scriptCount === 0) {
-      await Script.bulkCreate(seedScripts)
+      // 自动将 content 包装为 contents 数组
+      const scriptsWithContents = seedScripts.map(script => ({
+        ...script,
+        contents: [script.content]
+      }))
+      await Script.bulkCreate(scriptsWithContents)
       console.log(`✓ Seeded ${seedScripts.length} scripts successfully`)
     } else {
       console.log('✓ Scripts already seeded, skipping...')
