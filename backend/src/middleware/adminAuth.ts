@@ -3,7 +3,10 @@ import jwt from 'jsonwebtoken'
 import { Admin } from '../models/index.js'
 import type { AdminRole } from '../models/Admin.js'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET 环境变量未设置，请在 .env 文件中配置')
+}
 
 // 扩展 Request 类型
 declare global {

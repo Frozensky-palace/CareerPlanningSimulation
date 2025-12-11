@@ -85,7 +85,6 @@ import {
   User,
   ArrowDown,
   Folder,
-  Setting,
   SwitchButton
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/userStore'
@@ -96,7 +95,7 @@ interface Props {
   showAttributes?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   showGameInfo: false,
   showAttributes: false
 })

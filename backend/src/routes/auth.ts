@@ -138,9 +138,13 @@ router.post('/login', async (req, res) => {
     }
 
     // 生成JWT token
+    const jwtSecret = process.env.JWT_SECRET
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET 环境变量未设置')
+    }
     const token = jwt.sign(
       { userId: user.id },
-      process.env.JWT_SECRET || 'career-planning-secret',
+      jwtSecret,
       { expiresIn: '7d' }
     )
 

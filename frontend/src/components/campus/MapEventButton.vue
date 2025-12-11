@@ -93,7 +93,6 @@ import {
   Sunny,
   House,
   OfficeBuilding,
-  Trophy,
   Lock,
   Check
 } from '@element-plus/icons-vue'

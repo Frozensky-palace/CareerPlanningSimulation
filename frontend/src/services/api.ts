@@ -1,10 +1,28 @@
 import axios from 'axios'
-import type { ApiResponse } from '@/types'
 import { ElMessage } from 'element-plus'
+
+// API 基础地址
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+
+// 上传文件服务地址 (用于显示上传的图片等)
+export const UPLOAD_BASE_URL = import.meta.env.VITE_UPLOAD_URL || ''
+
+/**
+ * 获取完整的资源 URL
+ * @param path 资源路径，如 /uploads/scripts/xxx.webp
+ */
+export const getResourceUrl = (path: string): string => {
+  if (!path) return ''
+  // 如果已经是完整 URL，直接返回
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path
+  }
+  return `${UPLOAD_BASE_URL}${path}`
+}
 
 // 创建axios实例
 const request = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   timeout: 10000
 })
 

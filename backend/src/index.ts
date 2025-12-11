@@ -1,5 +1,7 @@
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -31,8 +33,47 @@ const __dirname = path.dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 5000 // server port
 
+// 生产环境配置
+const isProduction = process.env.NODE_ENV === 'production'
+
+// 安全中间件
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' } // 允许跨域加载资源
+}))
+
+// API 请求速率限制
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15分钟
+  max: isProduction ? 100 : 1000, // 生产环境每IP 100次，开发环境 1000次
+  message: { error: '请求过于频繁，请稍后再试' },
+  standardHeaders: true,
+  legacyHeaders: false
+})
+
+// 登录接口更严格的速率限制
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15分钟
+  max: isProduction ? 10 : 100, // 生产环境每IP 10次，开发环境 100次
+  message: { error: '登录尝试过于频繁，请稍后再试' },
+  standardHeaders: true,
+  legacyHeaders: false
+})
+
+// CORS 配置
+const corsOptions = {
+  origin: isProduction
+    ? (process.env.CORS_ORIGIN || '').split(',').filter(Boolean) // 生产环境从环境变量读取
+    : true, // 开发环境允许所有来源
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}
+
 // 中间件
-app.use(cors())
+app.use(cors(corsOptions))
+app.use('/api', apiLimiter)
+app.use('/api/auth/login', authLimiter)
+app.use('/api/admin/login', authLimiter)
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 

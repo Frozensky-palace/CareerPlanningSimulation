@@ -6,7 +6,10 @@ import { Op, fn, col, literal } from 'sequelize'
 import type { AdminAction } from '../models/AdminLog.js'
 
 const router = express.Router()
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET 环境变量未设置，请在 .env 文件中配置')
+}
 
 // ============ 管理员认证 ============
 

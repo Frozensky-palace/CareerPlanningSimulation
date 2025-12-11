@@ -139,7 +139,7 @@
               </el-button>
             </div>
             <div class="contents-list">
-              <div v-for="(content, index) in selectedScript.contents" :key="index" class="content-item">
+              <div v-for="(_, index) in selectedScript.contents" :key="index" class="content-item">
                 <el-input
                   v-model="selectedScript.contents[index]"
                   type="textarea"

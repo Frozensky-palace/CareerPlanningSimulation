@@ -109,7 +109,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import { ArrowLeft, ArrowRight, Loading, Location } from '@element-plus/icons-vue'
-import request from '@/services/api'
+import request, { getResourceUrl } from '@/services/api'
 import { useGameStore } from '@/stores/gameStore'
 import type { Script, ScriptOption } from '@/types'
 import ValueChangeDisplay from '@/components/Script/ValueChangeDisplay.vue'
@@ -129,8 +129,8 @@ const contentFinished = ref(false)  // 是否已阅读完所有内容
 // 获取所有内容段落
 const contentSegments = computed(() => {
   if (!script.value) return []
-  // 优先使用 contents 数组，如果没有则使用 content 作为单段
-  if (script.value.contents && script.value.contents.length > 0) {
+  // 优先使用 contents 数组，确保是真正的数组类型（防止字符串被当作字符数组）
+  if (script.value.contents && Array.isArray(script.value.contents) && script.value.contents.length > 0) {
     return script.value.contents
   }
   return script.value.content ? [script.value.content] : []
@@ -317,8 +317,7 @@ const handleBack = () => {
 }
 
 const getImageUrl = (url: string) => {
-  if (url.startsWith('http')) return url
-  return `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${url}`
+  return getResourceUrl(url)
 }
 
 // 监听路由参数变化，用于事件链跳转时重新加载剧本

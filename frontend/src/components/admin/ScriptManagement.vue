@@ -131,7 +131,7 @@
               </div>
               <div class="contents-list">
                 <div
-                  v-for="(content, index) in currentScript.contents"
+                  v-for="(_, index) in currentScript.contents"
                   :key="index"
                   class="content-item"
                 >
@@ -168,7 +168,7 @@
                   </div>
                   <el-input
                     :model-value="currentScript.contents[index]"
-                    @update:model-value="(val) => updateContent(index, val)"
+                    @update:model-value="(val: string) => updateContent(index, val)"
                     type="textarea"
                     :rows="3"
                     placeholder="输入本段内容"
@@ -398,7 +398,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Delete } from '@element-plus/icons-vue'
-import request from '@/services/api'
+import request, { UPLOAD_BASE_URL, getResourceUrl } from '@/services/api'
 import { useAdminStore } from '@/stores/adminStore'
 import { SCENE_CONFIGS, getSceneLabel } from '@/config/scenes'
 import type { Script } from '@/types'
@@ -414,7 +414,7 @@ const showEditorDialog = ref(false)
 const isEditing = ref(false)
 
 // 上传相关
-const uploadUrl = computed(() => `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/upload/script-background`)
+const uploadUrl = computed(() => `${UPLOAD_BASE_URL}/api/upload/script-background`)
 const uploadHeaders = computed(() => ({
   Authorization: `Bearer ${adminStore.token}`
 }))
@@ -629,7 +629,7 @@ const handleAddContent = () => {
 
 const handleRemoveContent = (index: number) => {
   if (currentScript.value.contents.length > 1) {
-    currentScript.value.contents = currentScript.value.contents.filter((_, i) => i !== index)
+    currentScript.value.contents = currentScript.value.contents.filter((_: string, i: number) => i !== index)
   }
 }
 
@@ -688,8 +688,7 @@ const handleSaveScript = async () => {
 
 // 上传相关方法
 const getImageUrl = (url: string) => {
-  if (url.startsWith('http')) return url
-  return `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${url}`
+  return getResourceUrl(url)
 }
 
 const beforeUpload = (file: File) => {
