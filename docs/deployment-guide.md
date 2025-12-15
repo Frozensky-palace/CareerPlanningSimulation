@@ -816,21 +816,37 @@ sudo certbot renew
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### 11.2 一键部署（Rocky Linux 9.x）
+### 11.2 一键部署
 
 ```bash
-# 1. 上传项目到服务器
-scp -r CareerPlanningSimulation root@your-server:/opt/
-
-# 2. SSH 登录服务器
+# 1. SSH 登录服务器
 ssh root@your-server
 
-# 3. 进入项目目录
-cd /opt/CareerPlanningSimulation
+# 2. 进入部署目录
+cd /opt
 
-# 4. 运行一键部署脚本
+# 3. 克隆代码（替换为你的仓库地址）
+git clone https://github.com/你的用户名/CareerPlanningSimulation.git
+
+# 4. 进入项目目录
+cd CareerPlanningSimulation
+
+# 5. 运行一键部署脚本
 chmod +x deploy.sh
 ./deploy.sh
+```
+
+### 11.2.1 后续更新流程
+
+```bash
+# SSH 登录服务器后
+cd /opt/CareerPlanningSimulation
+
+# 拉取最新代码
+git pull origin main
+
+# 重新构建并重启服务
+docker compose up -d --build
 ```
 
 ### 11.3 手动 Docker 部署步骤
