@@ -451,7 +451,18 @@ const seedScripts = [
 ]
 
 // 勋章种子数据
-const seedBadges = [
+const seedBadges: Array<{
+  name: string
+  description: string
+  icon: string
+  unlockCondition: {
+    type: 'attribute' | 'scripts' | 'phase'
+    attribute?: 'zhi' | 'ti' | 'de' | 'mei' | 'lao'
+    minValue?: number
+    completedCount?: number
+    semester?: number
+  }
+}> = [
   {
     name: '学霸',
     description: '智育达到80分',

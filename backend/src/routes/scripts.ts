@@ -1,10 +1,10 @@
-import express from 'express'
+import express, { Router } from 'express'
 import { Op, QueryTypes } from 'sequelize'
 import { authMiddleware, AuthRequest } from '../middleware/auth.js'
 import { Script, Save, SystemSetting } from '../models/index.js'
 import { sequelize } from '../config/database.js'
 
-const router = express.Router()
+const router: Router = express.Router()
 
 // 检查剧本解锁状态的辅助函数
 interface UnlockResult {
@@ -62,7 +62,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
     if (saveId) {
       save = await Save.findOne({
         where: {
-          id: saveId,
+          id: Number(saveId),
           userId: req.userId
         }
       })

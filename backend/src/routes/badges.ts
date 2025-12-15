@@ -1,10 +1,10 @@
-import express from 'express'
+import express, { Router } from 'express'
 import { QueryTypes } from 'sequelize'
 import { authMiddleware, AuthRequest } from '../middleware/auth.js'
 import { Badge, Save } from '../models/index.js'
 import { sequelize } from '../config/database.js'
 
-const router = express.Router()
+const router: Router = express.Router()
 
 // 检查勋章解锁条件
 const checkBadgeUnlock = (badge: any, save: any): boolean => {
@@ -60,7 +60,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
     if (saveId) {
       const save = await Save.findOne({
         where: {
-          id: saveId,
+          id: Number(saveId),
           userId: req.userId
         }
       })
