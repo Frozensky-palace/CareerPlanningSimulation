@@ -1,0 +1,7 @@
+# 根目录 .dockerignore
+.git
+.gitignore
+*.md
+docs
+.vscode
+*.log
