@@ -6,30 +6,24 @@
 # ============================================
 FROM node:18-alpine AS builder
 
-# 安装 pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 WORKDIR /app
 
 # 复制依赖文件
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 
 # 安装依赖
-RUN pnpm install --frozen-lockfile
+RUN npm install
 
 # 复制源代码
 COPY . .
 
 # 构建 TypeScript
-RUN pnpm build
+RUN npm run build
 
 # ============================================
 # 生产阶段
 # ============================================
 FROM node:18-alpine AS production
-
-# 安装 pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # 创建非 root 用户
 RUN addgroup -g 1001 -S nodejs && \
@@ -38,10 +32,10 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /app
 
 # 复制依赖文件
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 
 # 只安装生产依赖
-RUN pnpm install --frozen-lockfile --prod
+RUN npm install --omit=dev
 
 # 从构建阶段复制编译后的代码
 COPY --from=builder /app/dist ./dist

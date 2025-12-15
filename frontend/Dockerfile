@@ -6,16 +6,13 @@
 # ============================================
 FROM node:18-alpine AS builder
 
-# 安装 pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 WORKDIR /app
 
 # 复制依赖文件
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 
 # 安装依赖
-RUN pnpm install --frozen-lockfile
+RUN npm install
 
 # 复制源代码
 COPY . .
@@ -29,7 +26,7 @@ ENV VITE_API_URL=${VITE_API_URL}
 ENV VITE_UPLOAD_URL=${VITE_UPLOAD_URL}
 
 # 构建生产版本
-RUN pnpm build
+RUN npm run build
 
 # ============================================
 # 生产阶段 - Nginx
